@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>งบประมาณจัดซื้อจัดจ้าง | แผนกสารสนเทศ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="tech"]{
+    --bg:#F4F7F7;
+    --panel:#FFFFFF;
+    --ink:#0F2A38;
+    --ink-soft:#5C7580;
+    --line:#DEE6E7;
+    --primary:#0C7C74;
+    --primary-dark:#095A54;
+    --primary-tint:#E4F2F0;
+    --amber:#D9902E;
+    --amber-tint:#FBF0DD;
+    --green:#3F9D6E;
+    --green-tint:#E6F5ED;
+    --coral:#D1573F;
+    --coral-tint:#FBEAE6;
+    --header-grad: linear-gradient(135deg,#0F2A38 0%,#0B3B3D 100%);
+    --menu-active-underline:#8FD4C9;
+    --eyebrow-color:#8FD4C9;
+    --sub-color:#B9CBD0;
+    --menu-text:#B9CBD0;
+    --header-text:#FFFFFF;
+    --header-shadow: 0 6px 18px rgba(15,42,56,.18);
+    --card-radius:12px;
+  }
+  [data-theme="cute"]{
+    --bg:#FFF6FA;
+    --panel:#FFFFFF;
+    --ink:#7A3552;
+    --ink-soft:#C98DA8;
+    --line:#F6D9E6;
+    --primary:#E8608E;
+    --primary-dark:#C84A73;
+    --primary-tint:#FDE7F0;
+    --amber:#D6A73C;
+    --amber-tint:#FBF1DA;
+    --green:#8FBB86;
+    --green-tint:#EBF6E9;
+    --coral:#E2657C;
+    --coral-tint:#FCEAEE;
+    --header-grad: linear-gradient(135deg,#D6467E 0%,#D99A2E 100%);
+    --menu-active-underline:#FFFFFF;
+    --eyebrow-color:#FDE6EE;
+    --sub-color:#FCE3ED;
+    --menu-text:#F7D7E4;
+    --header-text:#FFFFFF;
+    --header-shadow: 0 8px 20px rgba(178,60,110,.35);
+    --card-radius:18px;
+  }
+  *{box-sizing:border-box;}
+  .theme-switch{
+    position:absolute; top:16px; right:clamp(16px,4vw,48px);
+    display:flex; gap:6px; z-index:2;
+  }
+  .theme-btn{
+    font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif;
+    font-size:11.5px; padding:6px 12px; border-radius:20px;
+    background:rgba(255,255,255,.08); color:var(--menu-text);
+    border:1px solid rgba(255,255,255,.18); cursor:pointer; transition:.15s;
+  }
+  .theme-btn:hover{background:rgba(255,255,255,.18); color:var(--header-text);}
+  .theme-btn.active{background:#fff; color:var(--ink); border-color:#fff; font-weight:600;}
+  .gear-btn{
+    font-size:14px; padding:6px 10px; border-radius:20px;
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+    cursor:pointer; transition:.15s; line-height:1;
+  }
+  .gear-btn:hover{background:rgba(255,255,255,.18); transform:rotate(25deg);}
+
+  .settings-overlay{
+    display:none; position:fixed; inset:0; background:rgba(15,20,25,.45);
+    z-index:50; align-items:flex-start; justify-content:center; padding:60px 16px;
+    overflow-y:auto;
+  }
+  .settings-overlay.open{display:flex;}
+  .settings-panel{
+    background:var(--panel); border-radius:var(--card-radius); max-width:520px; width:100%;
+    padding:20px clamp(16px,3vw,26px); box-shadow:0 20px 50px rgba(0,0,0,.25);
+  }
+  .settings-head{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
+  }
+  .settings-close{
+    background:none; border:none; font-size:16px; cursor:pointer; color:var(--ink-soft);
+    padding:4px 8px; border-radius:6px;
+  }
+  .settings-close:hover{background:var(--line); color:var(--ink);}
+  .sync-status{
+    font-size:11.5px; font-family:'IBM Plex Mono',monospace; color:var(--ink-soft);
+    position:relative; word-break:break-word; padding:8px 12px;
+    background:var(--bg); border-radius:8px; flex:1; min-width:200px;
+  }
+  .sync-status-row{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;
+  }
+  .sync-retry-btn{
+    font-size:11.5px; padding:7px 14px; border-radius:8px;
+    background:var(--panel); color:var(--ink);
+    border:1px solid var(--line); cursor:pointer; white-space:nowrap;
+  }
+  .sync-retry-btn:hover{background:var(--line);}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  header{
+    background:var(--ink);
+    background-image:var(--header-grad);
+    box-shadow:var(--header-shadow);
+    color:var(--header-text);
+    padding:24px clamp(16px,4vw,48px) 0;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute; right:-60px; top:-60px;
+    width:220px; height:220px; border-radius:50%;
+    border:1px solid rgba(255,255,255,.08);
+  }
+  header::before{
+    content:"";
+    position:absolute; right:20px; top:40px;
+    width:140px; height:140px; border-radius:50%;
+    border:1px solid rgba(255,255,255,.06);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--eyebrow-color); margin:0 0 8px;
+  }
+  h1{margin:0; font-size:clamp(20px,3vw,28px); font-weight:600; letter-spacing:-.01em; color:var(--header-text);}
+  .sub{color:var(--sub-color); font-size:13.5px; margin-top:6px; max-width:580px;}
+
+  .menu{
+    display:flex; gap:4px; margin-top:20px; overflow-x:auto;
+    position:relative; z-index:1; border-bottom:1px solid rgba(255,255,255,.14);
+  }
+  .menu-item{
+    font-size:13.5px; padding:10px 18px; color:var(--menu-text); cursor:pointer;
+    border-bottom:2px solid transparent; font-weight:500; user-select:none; transition:.15s;
+    white-space:nowrap;
+  }
+  .menu-item:hover{color:var(--header-text);}
+  .menu-item.active{color:var(--header-text); border-bottom-color:var(--menu-active-underline); font-weight:700;}
+
+  .tabs{
+    display:flex; gap:6px; margin:16px 0 20px; flex-wrap:wrap;
+    position:relative; z-index:1;
+  }
+  .tab{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px; padding:8px 16px; border-radius:20px;
+    background:rgba(255,255,255,.08); color:var(--menu-text);
+    border:1px solid rgba(255,255,255,.14); cursor:pointer;
+    transition:.15s; user-select:none;
+  }
+  .tab:hover{background:rgba(255,255,255,.16);}
+  .tab.active{background:#fff; color:var(--primary-dark); border-color:#fff; font-weight:600;}
+
+  main{padding:26px clamp(16px,4vw,48px) 60px; max-width:1280px; margin:0 auto;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .cards{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:14px; margin-bottom:28px;
+  }
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--card-radius);
+    padding:16px 18px;
+  }
+  .card .label{font-size:11.5px; color:var(--ink-soft); letter-spacing:.03em;}
+  .card .value{font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600; margin-top:6px;}
+  .card.total .value{color:var(--ink);}
+  .card.used .value{color:var(--amber);}
+  .card.remain .value{color:var(--green);}
+  .card.rate .value{color:var(--primary);}
+  .card .foot{font-size:11px; color:var(--ink-soft); margin-top:4px;}
+
+  section{margin-bottom:34px;}
+  .section-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; gap:12px; flex-wrap:wrap;}
+  .section-title{font-size:15px; font-weight:600;}
+  .section-note{font-size:12px; color:var(--ink-soft);}
+
+  .gauge-list{display:flex; flex-direction:column; gap:16px;}
+  .gauge-row{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--card-radius);
+    padding:14px 18px 16px;
+  }
+  .gauge-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px; gap:10px; flex-wrap:wrap;}
+  .gauge-cat{font-size:13.5px; font-weight:600;}
+  .gauge-count{font-size:11px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;}
+  .gauge-figs{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); white-space:nowrap;}
+  .gauge-figs b{color:var(--ink); font-weight:600;}
+
+  .vial{
+    position:relative; height:22px; background:var(--primary-tint);
+    border-radius:5px; overflow:hidden; border:1px solid #CFE6E2;
+  }
+  .vial-fill{
+    height:100%; background:linear-gradient(90deg,var(--primary),var(--primary-dark));
+    border-radius:5px 0 0 5px; position:relative; min-width:2px;
+    transition:width .5s ease;
+  }
+  .vial-fill.over{background:linear-gradient(90deg,var(--coral),#B23F2A);}
+  .vial-ticks{position:absolute; inset:0; display:flex; pointer-events:none;}
+  .vial-ticks span{flex:1; border-right:1px solid rgba(15,42,56,.08);}
+  .vial-ticks span:last-child{border-right:none;}
+  .vial-pct{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:600; color:var(--ink-soft);
+  }
+
+  .table-controls{display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center;}
+  .table-controls input[type=text]{
+    flex:1; min-width:180px; padding:9px 13px; border:1px solid var(--line); border-radius:8px;
+    font-family:inherit; font-size:13px; background:#fff;
+  }
+  .table-controls select{
+    padding:9px 13px; border:1px solid var(--line); border-radius:8px;
+    font-family:inherit; font-size:13px; background:#fff; color:var(--ink);
+  }
+  .table-controls input:focus, .table-controls select:focus{outline:2px solid var(--primary); outline-offset:1px;}
+  .count-pill{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--primary-dark);
+    background:var(--primary-tint); padding:6px 12px; border-radius:20px; white-space:nowrap;
+  }
+
+  .table-wrap{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--card-radius);
+    overflow:auto; max-height:640px;
+  }
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  thead th{
+    position:sticky; top:0; background:#F0F5F5; z-index:2;
+    text-align:left; padding:10px 12px; font-size:11px; letter-spacing:.03em;
+    color:var(--ink-soft); border-bottom:1px solid var(--line); cursor:pointer;
+    white-space:nowrap; user-select:none;
+  }
+  thead th:hover{color:var(--primary-dark);}
+  thead th.sorted::after{content:" ▾"; color:var(--primary);}
+  thead th.sorted.asc::after{content:" ▴";}
+  tbody td{padding:9px 12px; border-bottom:1px solid #EEF2F2; vertical-align:top;}
+  tbody tr:hover{background:#FAFCFC;}
+  td.num, th.num{text-align:right; font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums;}
+  td.name{max-width:300px;}
+  .badge{
+    display:inline-block; font-size:10.5px; padding:2px 8px; border-radius:20px;
+    background:var(--primary-tint); color:var(--primary-dark); font-family:'IBM Plex Mono',monospace;
+    white-space:nowrap;
+  }
+  .badge.user{background:var(--amber-tint); color:#8A5A16;}
+  .badge.soon{background:var(--coral-tint); color:var(--coral);}
+  .empty-row td{text-align:center; color:var(--ink-soft); padding:30px; font-size:13px;}
+  .del-btn{
+    border:none; background:var(--coral-tint); color:var(--coral); border-radius:6px;
+    padding:4px 9px; font-size:11.5px; cursor:pointer; font-family:'IBM Plex Mono',monospace;
+  }
+  .del-btn:hover{background:var(--coral); color:#fff;}
+
+  .form-panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--card-radius);
+    padding:20px clamp(16px,3vw,26px); margin-bottom:26px;
+  }
+  .form-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px;
+  }
+  .field label{
+    display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:5px; letter-spacing:.02em;
+  }
+  .field input, .field select{
+    width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:8px;
+    font-family:inherit; font-size:13px; background:#fff; color:var(--ink);
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--primary); outline-offset:1px;}
+  .form-actions{display:flex; gap:10px; margin-top:18px; align-items:center; flex-wrap:wrap;}
+  .btn-primary{
+    background:var(--primary); color:#fff; border:none; padding:11px 22px; border-radius:8px;
+    font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer; transition:.15s;
+  }
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-primary:disabled{background:#B7C6C7; cursor:not-allowed;}
+  .form-status{font-size:12px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;}
+  .form-status.ok{color:var(--green);}
+  .form-status.err{color:var(--coral);}
+  .hint{font-size:11.5px; color:var(--ink-soft); margin-top:14px; line-height:1.6;}
+
+  footer{
+    text-align:center; padding:20px; font-size:11.5px; color:var(--ink-soft);
+    font-family:'IBM Plex Mono',monospace;
+  }
+
+  @media (max-width:640px){
+    .gauge-figs{font-size:11px;}
+    .table-wrap{max-height:480px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="theme-switch" id="themeSwitch">
+    <button type="button" class="theme-btn" data-theme-btn="tech">💻 เทคโนโลยี</button>
+    <button type="button" class="theme-btn" data-theme-btn="cute">🌸 น่ารัก</button>
+    <button type="button" class="gear-btn" id="openSettingsBtn" title="ตั้งค่า">⚙️</button>
+  </div>
+  <p class="eyebrow" id="orgEyebrow">แผนกสารสนเทศ · โรงพยาบาลศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์</p>
+  <h1>งบประมาณจัดซื้อจัดจ้าง</h1>
+  <p class="sub">รายการจัดซื้อจัดจ้างและงบประมาณที่ตั้งไว้ แยกตามปีงบประมาณและหมวดหมู่</p>
+  <div class="menu">
+    <div class="menu-item active" data-view="dashboard">Dashboard</div>
+    <div class="menu-item" data-view="budget-list">รายการงบประมาณ</div>
+    <div class="menu-item" data-view="budget-cat">งบประมาณแยกตามหมวด</div>
+    <div class="menu-item" data-view="register">รายการจัดซื้อจัดจ้าง</div>
+    <div class="menu-item" data-view="vendors">ทะเบียนผู้ขาย</div>
+  </div>
+  <div class="tabs" id="yearTabs"></div>
+</header>
+
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-panel">
+    <div class="settings-head">
+      <div class="section-title">ตั้งค่า</div>
+      <button type="button" class="settings-close" id="closeSettingsBtn">✕</button>
+    </div>
+    <div class="form-panel" style="margin-bottom:0;">
+      <div class="field" style="margin-bottom:14px;">
+        <label for="s-org-name">ชื่อหน่วยงาน (แสดงบนหัวเว็บ/หน้าแรก)</label>
+        <input type="text" id="s-org-name" placeholder="เช่น แผนกสารสนเทศ · โรงพยาบาลศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์">
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label for="s-apps-script-url">URL เชื่อมต่อฐานข้อมูล (Google Apps Script — ลงท้ายด้วย /exec)</label>
+        <input type="text" id="s-apps-script-url" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <div class="sync-status-row">
+        <div class="sync-status offline" id="syncStatus">⚪ ใช้ข้อมูลในไฟล์ (ยังไม่ได้เชื่อมต่อ Google Sheet)</div>
+        <button type="button" class="sync-retry-btn" id="retrySyncBtn">🔄 ลองใหม่</button>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-primary" id="saveSettingsBtn">บันทึกการตั้งค่า</button>
+        <span class="form-status" id="settingsStatus"></span>
+      </div>
+      <div class="hint">ตั้งค่าทั้งหมดเก็บไว้ใน<b>เบราว์เซอร์และเครื่องนี้เท่านั้น</b> — เปิดไฟล์เดียวกันในเครื่องอื่นต้องตั้งค่าใหม่</div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <!-- ================= DASHBOARD ================= -->
+  <div class="view active" id="view-dashboard">
+    <section class="cards" id="summaryCards"></section>
+
+    <section>
+      <div class="section-head">
+        <div class="section-title">งบประมาณตามหมวดหมู่ (สรุปย่อ)</div>
+        <div class="section-note">ดูรายละเอียดเพิ่มเติมได้ที่เมนู "งบประมาณแยกตามหมวด"</div>
+      </div>
+      <div class="gauge-list" id="gaugeListMini"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="section-title">สัญญา/รายการใกล้หมดอายุ</div>
+        <div class="section-note">น้อยกว่า 1 ปี — เรียงตามวันหมดอายุใกล้สุดขึ้นก่อน (สีแดง = เหลือน้อยกว่า 3 เดือน)</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>รายการ</th><th>ผู้ขาย</th><th>ผู้รับผิดชอบ</th><th>หมดอายุวันที่</th>
+          </tr></thead>
+          <tbody id="expiringBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div class="section-title">สัญญา/รายการหมดอายุแล้ว</div>
+        <div class="section-note">จากทะเบียนจัดซื้อจัดจ้าง</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>รายการ</th><th>ผู้ขาย</th><th>ผู้รับผิดชอบ</th><th>หมดอายุวันที่</th>
+          </tr></thead>
+          <tbody id="expiredBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= รายการงบประมาณ ================= -->
+  <div class="view" id="view-budget-list">
+    <section>
+      <div class="section-head">
+        <div class="section-title">รายการงบประมาณทั้งหมด</div>
+        <div class="section-note" id="tableNote"></div>
+      </div>
+      <div class="table-controls">
+        <input type="text" id="searchBox" placeholder="ค้นหาชื่อรายการ...">
+        <select id="catFilter"></select>
+        <span class="count-pill" id="countPill">0 รายการ</span>
+        <button type="button" class="btn-primary" id="toggleAddFormBtn" style="margin-left:auto;">+ เพิ่มรายการใหม่</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-key="year">ปี</th>
+              <th data-key="category">หมวดหมู่</th>
+              <th data-key="plan_code">รหัสงบประมาณ</th>
+              <th data-key="name">รายการ</th>
+              <th data-key="unit">หน่วยนับ</th>
+              <th class="num" data-key="unit_price">ราคา/หน่วย</th>
+              <th class="num" data-key="budget">งบประมาณ (บาท)</th>
+              <th class="num" data-key="actual_value">ใช้จริง (บาท)</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="addFormSection" style="display:none;">
+      <div class="section-head">
+        <div class="section-title">บันทึก / แก้ไขรายการงบประมาณ</div>
+        <div class="section-note">เลือกรายการเดิมเพื่อแก้ไข หรือเพิ่มรายการใหม่ — เขียนเข้า Google Sheet โดยตรง</div>
+      </div>
+      <div class="form-panel">
+        <form id="addForm">
+          <div class="form-grid">
+            <div class="field" style="grid-column:span 2;">
+              <label for="f-select">เลือกรายการ</label>
+              <select id="f-select"></select>
+            </div>
+            <div class="field">
+              <label for="f-year">ปีงบประมาณ</label>
+              <input type="number" id="f-year" required placeholder="เช่น 2569">
+            </div>
+            <div class="field">
+              <label for="f-category">หมวดหมู่</label>
+              <input type="text" id="f-category" required placeholder="เช่น ครุภัณฑ์" list="catList">
+              <datalist id="catList"></datalist>
+            </div>
+            <div class="field">
+              <label for="f-plan-code">รหัสงบประมาณ</label>
+              <input type="text" id="f-plan-code" placeholder="เช่น 69-06">
+            </div>
+            <div class="field" style="grid-column:span 2;">
+              <label for="f-name">รายการ</label>
+              <input type="text" id="f-name" required placeholder="ชื่อรายการที่จัดซื้อ">
+            </div>
+            <div class="field">
+              <label for="f-unit">หน่วยนับ</label>
+              <input type="text" id="f-unit" placeholder="เช่น ชิ้น, ระบบ, รายการ">
+            </div>
+            <div class="field">
+              <label for="f-unit-price">ราคา/หน่วย (บาท)</label>
+              <input type="number" step="0.01" id="f-unit-price" placeholder="0.00">
+            </div>
+            <div class="field">
+              <label for="f-budget">งบประมาณที่ตั้งไว้ (บาท)</label>
+              <input type="number" step="0.01" id="f-budget" placeholder="0.00">
+            </div>
+            <div class="field">
+              <label for="f-actual">มูลค่าจัดซื้อจริง (บาท)</label>
+              <input type="number" step="0.01" id="f-actual" placeholder="0.00">
+            </div>
+            <div class="field">
+              <label for="f-vendor">ผู้ขาย / ผู้รับผิดชอบ</label>
+              <input type="text" id="f-vendor" placeholder="ไม่บังคับ">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" id="submitBtn">บันทึกรายการ</button>
+            <button type="button" class="btn-primary" id="cancelAddFormBtn" style="background:var(--ink-soft);">ยกเลิก</button>
+            <span class="form-status" id="formStatus"></span>
+          </div>
+        </form>
+        <div class="hint">บันทึกแล้วรายการจะเขียนเข้า Google Sheet โดยตรง และแสดงในตารางด้านบนทันที (ต้องเชื่อมต่ออินเทอร์เน็ต)</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= งบประมาณแยกตามหมวด ================= -->
+  <div class="view" id="view-budget-cat">
+    <section class="cards" id="catSummaryCards"></section>
+    <section>
+      <div class="section-head">
+        <div class="section-title">งบประมาณตามหมวดหมู่</div>
+        <div class="section-note">คำนวณจากข้อมูล "รายการงบประมาณ" (รวมรายการที่เพิ่มเองด้วย)</div>
+      </div>
+      <div class="gauge-list" id="gaugeListFull"></div>
+    </section>
+  </div>
+
+  <!-- ================= รายการจัดซื้อจัดจ้าง (ทะเบียน) ================= -->
+  <div class="view" id="view-register">
+    <section>
+      <div class="section-head">
+        <div class="section-title">ทะเบียนจัดซื้อจัดจ้าง</div>
+        <div class="section-note" id="regNote"></div>
+      </div>
+      <div class="table-controls">
+        <input type="text" id="regSearch" placeholder="ค้นหาชื่อรายการ / ผู้ขาย / ผู้รับผิดชอบ...">
+        <select id="regCatFilter"></select>
+        <span class="count-pill" id="regCountPill">0 รายการ</span>
+        <button type="button" class="btn-primary" id="toggleRegFormBtn" style="margin-left:auto;">+ เพิ่มรายการใหม่</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-rkey="no">ที่</th>
+              <th data-rkey="category">หมวดหมู่</th>
+              <th data-rkey="budget_year">ปีงบประมาณ</th>
+              <th data-rkey="plan_code">รหัสงบประมาณ</th>
+              <th data-rkey="name">รายการ</th>
+              <th data-rkey="unit">หน่วย</th>
+              <th class="num" data-rkey="qty">จำนวน</th>
+              <th class="num" data-rkey="unit_price">ราคา/หน่วย</th>
+              <th class="num" data-rkey="total">ทั้งหมด (บาท)</th>
+              <th data-rkey="vendor">ผู้ขาย</th>
+              <th data-rkey="responsible">ผู้รับผิดชอบ</th>
+              <th data-rkey="renew_period">การต่ออายุ</th>
+              <th data-rkey="delivery_due">วันส่งมอบ</th>
+              <th data-rkey="expire_year">ปีที่หมดอายุ</th>
+              <th data-rkey="expire_date">หมดอายุวันที่</th>
+              <th data-rkey="doc_no">เลขที่หนังสือ</th>
+              <th data-rkey="status">สถานะ</th>
+              <th data-rkey="note">หมายเหตุ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="registerBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="regFormSection" style="display:none;">
+      <div class="section-head">
+        <div class="section-title">บันทึก / แก้ไขทะเบียนจัดซื้อจัดจ้าง</div>
+        <div class="section-note">เลือกรายการเดิมเพื่อเติมข้อมูลที่ยังไม่ครบ หรือเพิ่มรายการใหม่ — รายการใหม่จะถูกเพิ่มเข้า "รายการงบประมาณ" ให้อัตโนมัติด้วย</div>
+      </div>
+      <div class="form-panel">
+        <form id="regForm">
+          <div class="form-grid">
+            <div class="field" style="grid-column:span 2;">
+              <label for="r-select">เลือกรายการ</label>
+              <select id="r-select"></select>
+            </div>
+            <div class="field">
+              <label for="r-category">หมวดหมู่</label>
+              <input type="text" id="r-category" list="regCatList">
+              <datalist id="regCatList"></datalist>
+            </div>
+            <div class="field">
+              <label for="r-budget-year">ปีงบประมาณ</label>
+              <input type="number" id="r-budget-year" placeholder="เช่น 2569">
+            </div>
+            <div class="field">
+              <label for="r-budget-code">รหัสงบประมาณ</label>
+              <input type="text" id="r-budget-code" placeholder="เช่น 69-06">
+            </div>
+            <div class="field" style="grid-column:span 2;">
+              <label for="r-name">รายการ</label>
+              <input type="text" id="r-name" required placeholder="ชื่อรายการ">
+            </div>
+            <div class="field">
+              <label for="r-unit">หน่วย</label>
+              <input type="text" id="r-unit" placeholder="เช่น ระบบ, ชิ้น">
+            </div>
+            <div class="field">
+              <label for="r-qty">จำนวน</label>
+              <input type="number" step="0.01" id="r-qty">
+            </div>
+            <div class="field">
+              <label for="r-unit-price">ราคา/หน่วย (บาท)</label>
+              <input type="number" step="0.01" id="r-unit-price">
+            </div>
+            <div class="field">
+              <label for="r-vendor">ผู้ขาย</label>
+              <select id="r-vendor"><option value="">-- เลือกผู้ขาย --</option></select>
+            </div>
+            <div class="field">
+              <label for="r-responsible">ผู้รับผิดชอบ</label>
+              <input type="text" id="r-responsible">
+            </div>
+            <div class="field">
+              <label for="r-renew">การต่ออายุ (ระยะเวลา)</label>
+              <input type="text" id="r-renew" placeholder="เช่น รายปี, 3 ปี">
+            </div>
+            <div class="field">
+              <label for="r-delivery">วันส่งมอบ (วว/ดด/ปปปป)</label>
+              <input type="text" id="r-delivery" placeholder="เช่น 01/10/2568">
+            </div>
+            <div class="field">
+              <label for="r-expire-year">ปีที่หมดอายุ</label>
+              <input type="text" id="r-expire-year" placeholder="เช่น 2569">
+            </div>
+            <div class="field">
+              <label for="r-expire-date">หมดอายุวันที่ (วว/ดด/ปปปป)</label>
+              <input type="text" id="r-expire-date" placeholder="เช่น 30/09/2569">
+            </div>
+            <div class="field">
+              <label for="r-doc">เลขที่หนังสือ</label>
+              <input type="text" id="r-doc">
+            </div>
+            <div class="field">
+              <label for="r-status">สถานะ</label>
+              <input type="text" id="r-status" placeholder="เช่น ดำเนินการ, เสร็จสิ้น">
+            </div>
+            <div class="field" style="grid-column:span 2;">
+              <label for="r-note">หมายเหตุ</label>
+              <input type="text" id="r-note">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" id="regSubmitBtn">บันทึกข้อมูล</button>
+            <button type="button" class="btn-primary" id="cancelRegFormBtn" style="background:var(--ink-soft);">ยกเลิก</button>
+            <span class="form-status" id="regFormStatus"></span>
+          </div>
+        </form>
+        <div class="hint">เลือก "-- เพิ่มรายการใหม่ --" เพื่อสร้างรายการใหม่ หรือเลือกรายการเดิมจากเมนูด้านบนเพื่อเติม/แก้ไขข้อมูลที่ยังขาด — รายการใหม่จะเขียนเข้า Google Sheet โดยตรง (ต้องเชื่อมต่ออินเทอร์เน็ต) ส่วนการแก้ไขรายการเดิมจะแสดงผลในตารางด้านบนทันที</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= ทะเบียนผู้ขาย ================= -->
+  <div class="view" id="view-vendors">
+    <section>
+      <div class="section-head">
+        <div class="section-title">ทะเบียนผู้ขาย</div>
+        <div class="section-note" id="vendorNote"></div>
+      </div>
+      <div class="table-controls">
+        <input type="text" id="vendorSearch" placeholder="ค้นหาชื่อบริษัท/ผู้ติดต่อ...">
+        <span class="count-pill" id="vendorCountPill">0 ราย</span>
+        <button type="button" class="btn-primary" id="toggleVendorFormBtn" style="margin-left:auto;">+ เพิ่มผู้ขายใหม่</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-vkey="company">ชื่อบริษัท/ร้านค้า</th>
+              <th data-vkey="address">ที่อยู่</th>
+              <th data-vkey="contact_name">ชื่อผู้ติดต่อ</th>
+              <th data-vkey="phone">เบอร์ติดต่อ</th>
+              <th data-vkey="note">หมายเหตุ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="vendorBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="vendorFormSection" style="display:none;">
+      <div class="section-head">
+        <div class="section-title">เพิ่ม / แก้ไขผู้ขาย</div>
+        <div class="section-note">บันทึกแล้วข้อมูลจะแสดงในตารางด้านบนทันที</div>
+      </div>
+      <div class="form-panel">
+        <form id="vendorForm">
+          <div class="form-grid">
+            <div class="field" style="grid-column:span 2;">
+              <label for="v-select">เลือกผู้ขาย</label>
+              <select id="v-select"></select>
+            </div>
+            <div class="field" style="grid-column:span 2;">
+              <label for="v-company">ชื่อบริษัท/ร้านค้า</label>
+              <input type="text" id="v-company" required placeholder="ชื่อบริษัท/ร้านค้า">
+            </div>
+            <div class="field" style="grid-column:span 2;">
+              <label for="v-address">ที่อยู่</label>
+              <input type="text" id="v-address" placeholder="ที่อยู่ผู้ขาย">
+            </div>
+            <div class="field">
+              <label for="v-contact-name">ชื่อผู้ติดต่อ</label>
+              <input type="text" id="v-contact-name" placeholder="ชื่อ-นามสกุลผู้ติดต่อ">
+            </div>
+            <div class="field">
+              <label for="v-phone">เบอร์ติดต่อ</label>
+              <input type="text" id="v-phone" placeholder="เบอร์โทร">
+            </div>
+            <div class="field" style="grid-column:span 2;">
+              <label for="v-note">หมายเหตุ</label>
+              <input type="text" id="v-note">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" id="vendorSubmitBtn">บันทึกผู้ขาย</button>
+            <button type="button" class="btn-primary" id="cancelVendorFormBtn" style="background:var(--ink-soft);">ยกเลิก</button>
+            <span class="form-status" id="vendorFormStatus"></span>
+          </div>
+        </form>
+        <div class="hint">บันทึกแล้วรายการจะเขียนเข้าแท็บ "ทะเบียนผู้ขาย" ใน Google Sheet โดยตรง (ต้องเชื่อมต่ออินเทอร์เน็ต และต้องสร้างแท็บนี้ในชีทไว้ก่อน)</div>
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<footer>สรุปจากไฟล์แผนการจัดซื้อจัดจ้าง แผนกสารสนเทศ — สำหรับใช้งานภายในแผนก</footer>
+
+<script>
+let SEED_DATA = [{"year": 2569, "category": "วัสดุ", "name": "External HDD", "unit": "ก้อน", "unit_price": 2900, "qty": null, "budget": 23200, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "BATTERY UPS 7.0Ah/ 12V 'SYNDOME'", "unit": "ก้อน", "unit_price": 690, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "ไส้ไก่เก็บสายไฟ 10 เมตร", "unit": "ถุง", "unit_price": 100, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "เม็ดเชื่อมสายแลน3M Scotchlok UY K1", "unit": "กล่อง", "unit_price": 199, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "เครื่องชาร์จถ่าน HIRO NI-MH/NI-CD 4P", "unit": "เครื่อง", "unit_price": 899, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "Plug RJ45 CAT6 LINK (US-1002) (10/Pack)", "unit": "ถุง", "unit_price": 95, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "คีมตัดสายไฟ plato", "unit": "อัน", "unit_price": 50, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "ไฟฉาย LED LUZINO รุ่น KN-8493LA", "unit": "กระบอก", "unit_price": 399, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "Wireless USB Adapter TP-LINK (Archer T2U Plus)", "unit": "อัน", "unit_price": 760, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "TP-LINK 10GBASE-TRJ45 Module รุ่นTL-SM5310T", "unit": "อัน", "unit_price": 1950, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "SSD M.2 PCIe 500.GB (5Y) WD Blue SN580", "unit": "ชิ้น", "unit_price": 1690, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "ท่อหดใสแบบแบน ขนาด 10 มล", "unit": "ม้วน", "unit_price": 1000, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "Marker Strip (MS-65) (MS-100) BANDEX", "unit": "ถุง", "unit_price": 189, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "เคเบิลไทร์4 นิ้ว", "unit": "ถุง", "unit_price": 50, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "หัวพิมพ์TSC TTP-245C / TTP-244CE", "unit": "อัน", "unit_price": 1750, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "กาวร้อน", "unit": "หลอด", "unit_price": 60, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "Jack RJ45 CAT6 LINK (US-1006STF)", "unit": "ถุง", "unit_price": 135, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "ปลักไฟ Tower (11ช่องเสียบ) 3ม.", "unit": "อัน", "unit_price": 690, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "สายโทรศัพท์แบบแบน 4C LINK UL-0044", "unit": "กล่อง", "unit_price": 950, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "หูฟังมีสาย Yealink รุ่น YHS34 Lite Mono", "unit": "อัน", "unit_price": 1150, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุ", "name": "Digital Battery Tester Micro-200pro", "unit": "เครื่อง", "unit_price": 1350, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "ซอฟต์แวร์/ระบบบริการ", "name": "Package Line Official Account (Pro Package) เดือนละ 1,904.60 บาท 12 เดือน", "unit": "รายการต่อเดือน", "unit_price": 1904.6, "qty": null, "budget": 22855.2, "actual_qty": null, "actual_value": 5791.48, "vendor": ""}, {"year": 2569, "category": "ซอฟต์แวร์/ระบบบริการ", "name": "Line Official Account Premium ID (รายปี) 1 ครั้ง", "unit": "รายการต่อปี", "unit_price": 475.08, "qty": null, "budget": 475.08, "actual_qty": null, "actual_value": 475.08, "vendor": ""}, {"year": 2569, "category": "ซอฟต์แวร์/ระบบบริการ", "name": "Corporate SMS รายการต่อปี 1 ครั้ง", "unit": "รายการต่อปี", "unit_price": 10451.76, "qty": null, "budget": 10451.76, "actual_qty": null, "actual_value": 10451.76, "vendor": ""}, {"year": 2569, "category": "ซอฟต์แวร์/ระบบบริการ", "name": "SIM ห้อง Data Center จำนวน 4 รายการ เดือนละ 856 บาท 12 เดือน", "unit": "ระบบ", "unit_price": 809, "qty": null, "budget": 3236, "actual_qty": null, "actual_value": 809, "vendor": ""}, {"year": 2569, "category": "ซอฟต์แวร์/ระบบบริการ", "name": "Dev Express", "unit": "license", "unit_price": 102720, "qty": null, "budget": 102720, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "ซอฟต์แวร์/ระบบบริการ", "name": "พื้นที่เก็บและแก้ไขข้อมูลชนิดคลาวน์", "unit": "รายการต่อปี", "unit_price": 2850, "qty": null, "budget": 2850, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "ซอฟต์แวร์/ระบบบริการ", "name": "Apple Developer (99 USD*35*3 Account) /ปี 1 ครั้ง", "unit": "รายการ", "unit_price": 10395, "qty": null, "budget": 10395, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "ซอฟต์แวร์/ระบบบริการ", "name": "Android Developer (25 USD*35*3 Account)/ปี 1 ครั้ง", "unit": "รายการ", "unit_price": 2625, "qty": null, "budget": 2625, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "BATTERY UPS 5.5Ah/ 12V 'ETECH'", "unit": "ก้อน", "unit_price": 479, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "BATTERY UPS 7.0Ah/ 12V 'SYNDOME'", "unit": "ก้อน", "unit_price": 690, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ไส้ไก่เก็บสายไฟ 10 เมตร", "unit": "ถุง", "unit_price": 100, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "เม็ดเชื่อมสายแลน3M Scotchlok UY K1", "unit": "กล่อง", "unit_price": 199, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "เครื่องชาร์จถ่าน HIRO NI-MH/NI-CD 4P", "unit": "เครื่อง", "unit_price": 899, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Plug RJ45 CAT6 LINK (US-1002) (10/Pack)", "unit": "ถุง", "unit_price": 95, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "คีมตัดสายไฟ plato", "unit": "อัน", "unit_price": 50, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ไฟฉาย LED LUZINO รุ่น KN-8493LA", "unit": "กระบอก", "unit_price": 399, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Wireless USB Adapter TP-LINK (Archer T2U Plus)", "unit": "อัน", "unit_price": 760, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "TP-LINK 10GBASE-TRJ45 Module รุ่นTL-SM5310T", "unit": "อัน", "unit_price": 1950, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "SSD M.2 PCIe 500.GB (5Y) WD Blue SN580", "unit": "ชิ้น", "unit_price": 1690, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ท่อหดใสแบบแบน ขนาด 10 มล", "unit": "ม้วน", "unit_price": 1000, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Marker Strip (MS-65) (MS-100) BANDEX", "unit": "ถุง", "unit_price": 189, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "เคเบิลไทร์4 นิ้ว", "unit": "ถุง", "unit_price": 50, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "หัวพิมพ์TSC TTP-245C / TTP-244CE", "unit": "อัน", "unit_price": 1750, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "กาวร้อน", "unit": "หลอด", "unit_price": 60, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Jack RJ45 CAT6 LINK (US-1006STF)", "unit": "ถุง", "unit_price": 135, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ปลักไฟ Tower (11ช่องเสียบ) 3ม.", "unit": "อัน", "unit_price": 690, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "สายโทรศัพท์แบบแบน 4C LINK UL-0044", "unit": "กล่อง", "unit_price": 950, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "หูฟังมีสาย Yealink รุ่น YHS34 Lite Mono", "unit": "อัน", "unit_price": 1150, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Digital Battery Tester Micro-200pro", "unit": "เครื่อง", "unit_price": 1350, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ถ่านอัลคาไลน์ PANASONIC 9V", "unit": "กล่อง", "unit_price": 790, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "CAT6 UTP Cable (305m/Box) LINK (US-9116LSZH)", "unit": "ลัง", "unit_price": 4990, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "น้ำยาล้างหน้าสัมผัสทางไฟฟ้า CRC #2015", "unit": "กระป๋อง", "unit_price": 269, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ครีมขจัดคราบเอนกประสงค์ สเตคลีน", "unit": "กระป๋อง", "unit_price": 59, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Cable HDMI 4K M/M(10M) V.2.0", "unit": "เส้น", "unit_price": 550, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "แปรงทาสี POLYESTER KINGORIGIN FD05555 3นิ้ว", "unit": "อัน", "unit_price": 79, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ผ้าไมโครไฟเบอร์", "unit": "ผืน", "unit_price": 60, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ฟิวส์หลอดแก้ว", "unit": "กล่อง", "unit_price": 50, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "FOXSUR เครื่องชาร์จ ฟื้นฟูแบตเตอรี่", "unit": "เครื่อง", "unit_price": 890, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "เทป TAPE CASSETTE TZE-631 12mm", "unit": "ม้วน", "unit_price": 570, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Converter Display Port TO HDMI UGREEN (40363)", "unit": "ชิ้น", "unit_price": 439, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Converter Type-C TO HDMI 'GLINK' GL007A", "unit": "ชิ้น", "unit_price": 290, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "พุกยึดผนังกลวงพร้อมสกรู", "unit": "ถุง", "unit_price": 59, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "สายFiberสำเร็จรูป ชนิด 2C ขนาด 400 เมตร", "unit": "ม้วน", "unit_price": 1590, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "เคเบิ้ลไทร์ 6 นิ้ว", "unit": "ถุง", "unit_price": 80, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "เคเบิ้ลไทร์ 8 นิ้ว", "unit": "ถุง", "unit_price": 90, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "เคเบิ้ลไทร์ 12 นิ้ว", "unit": "ถุง", "unit_price": 130, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ถ่าน for M/B CR2032PT (ถ่านกระดุม)", "unit": "ก้อน", "unit_price": 60, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Keyboard HP Pavilion X360/14-DH/14-CE Backlit (Black)", "unit": "ชิ้น", "unit_price": 1590, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ตะกั่ว บัคกรี", "unit": "ชิ้น", "unit_price": 60, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "น้ำยาประสารสำหรับบัคกรี", "unit": "ตลับ", "unit_price": 40, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "แท่งวางหัวแร้ง", "unit": "อัน", "unit_price": 420, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "หัวแร้ง Hakko 981 F-V22", "unit": "เครื่อง", "unit_price": 890, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ที่ดูดตะกั่ว รุ่น Hakko DS-01", "unit": "ชิ้น", "unit_price": 390, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Cable HDMI 4K M/M (5M) V.2.0", "unit": "เส้น", "unit_price": 450, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Cable PRINTER USB (5M) 'UGREEN' 10352", "unit": "เส้น", "unit_price": 275, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "เคส samsung tap S6 lite", "unit": "ชิ้น", "unit_price": 490, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "เคส samsung tap A7", "unit": "ชิ้น", "unit_price": 490, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ฟิล์ม samsung tap A7", "unit": "ชิ้น", "unit_price": 690, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ฟิล์ม samsung tap S6 lite", "unit": "ชิ้น", "unit_price": 690, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "แบตเตอรี notebook dell G7 7588", "unit": "ชิ้น", "unit_price": 1890, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Mouse", "unit": "ชิ้น", "unit_price": 130, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "keyboard", "unit": "ชิ้น", "unit_price": 139, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "หมึกพิมพ์ HP 76A OPD Extend", "unit": "ชิ้น", "unit_price": 4290, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "กล่อง PULL BOX BT 6x6x4 นิ้ว สีเทา", "unit": "ชิ้น", "unit_price": 190, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "อุปกรณ์เป่าลมร้อน ", "unit": "ชิ้น", "unit_price": 1280, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "keybord notebook Dell Latitude 3510", "unit": "ชิ้น", "unit_price": null, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "แบตเตอรี notebook dell Latitude 3510", "unit": "ชิ้น", "unit_price": null, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": " Converter Type-C TO LAN UGREEN", "unit": "ชิ้น", "unit_price": 650, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": " Cable Fiber Duplex Single-Mode 3M", "unit": "เส้น", "unit_price": 290, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Patch cord Fiber LC/UPC to LC/UPC Single mode 10M", "unit": "เส้น", "unit_price": 350, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "เทปตีนตุ๊กแกสองหน้า", "unit": "เส้น", "unit_price": 35, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "สวานไขควงไร้สาย", "unit": "ชิ้น", "unit_price": 1590, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "รีเลย์ 2  คอนแทค", "unit": "ชิ้น", "unit_price": 160, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ถ่านอัลคาไลน์ AAA", "unit": "แพ็ค", "unit_price": 590, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Laser Pointer  Logitech (R500s)", "unit": "ชิ้น", "unit_price": 1400, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Mouse ไร้สาย", "unit": "ชิ้น", "unit_price": 700, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ฟิล์ม โทรศัพท์มือถือ samsung A02s", "unit": "ชิ้น", "unit_price": 250, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "Converter Type-C 6 in1 UGREEN", "unit": "ชิ้น", "unit_price": 1190, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "วัสดุงานซ่อมคอมพิวเตอร์", "name": "ไมค์โครโฟนห้องประชุม แบบมือถือคู่", "unit": "ชุด", "unit_price": 6000, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "ครุภัณฑ์", "name": "ระบบเครือข่ายไร้สายโรงพยาบาลสงฆ์", "unit": "ระบบ", "unit_price": 5995905.5, "qty": null, "budget": 0, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "ครุภัณฑ์", "name": "เพิ่ม Node Server สำหรับเครื่องแม่ข่าย", "unit": "ระบบ", "unit_price": 5000000, "qty": null, "budget": 5000000, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "ครุภัณฑ์", "name": "ระบบเครือข่ายไร้สายโรงพยาบาลสงฆ์ Third party", "unit": "ระบบ", "unit_price": 2281660, "qty": null, "budget": 2281660, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "ครุภัณฑ์", "name": "โครงการจัดทำมาตรฐานห้องดาต้าเซ็นเตอร์ตามมาตรฐานสากล", "unit": "ระบบ", "unit_price": 1500000, "qty": null, "budget": 1500000, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "โครงการ/ประชุม/อบรม", "name": "ประชุมคณะกรรมการดิจิทัลทางการแพทย์ ศูนย์การแพทย์ฯ", "unit": "ครั้ง", "unit_price": 80, "qty": null, "budget": 11520, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "โครงการ/ประชุม/อบรม", "name": "โครงการจัดทำ แผนแม่บทดิจิทัล ศูนย์การแพทย์ฯ", "unit": "โครงการ", "unit_price": 100, "qty": null, "budget": 10000, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "โครงการ/ประชุม/อบรม", "name": "ประชุมอื่นๆ", "unit": "ครั้ง", "unit_price": 50, "qty": null, "budget": 6000, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2569, "category": "โครงการ/ประชุม/อบรม", "name": "อบรมความรู้เกี่ยวกับ Cyber Security", "unit": "ครั้ง", "unit_price": 50, "qty": null, "budget": 2500, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2568, "category": "บำรุงรักษา (MA)", "name": "การบำรุงรักษาระบบโทรศัพท์และระบบตอบรับอัตโนมัติ", "unit": "ระบบ", "unit_price": 837000, "qty": null, "budget": 837000, "actual_qty": null, "actual_value": 836740, "vendor": ""}, {"year": 2568, "category": "บำรุงรักษา (MA)", "name": "การบำรุงรักษาเครื่องสำรองไฟห้องดาต้าเซ็นต์เตอร์", "unit": "ระบบ", "unit_price": 3500000, "qty": null, "budget": 3500000, "actual_qty": null, "actual_value": 0, "vendor": ""}, {"year": 2568, "category": "บำรุงรักษา (MA)", "name": "ระบบสำรองไฟตู้สาขาอัตโนมัติ", "unit": "ระบบ", "unit_price": 300000, "qty": null, "budget": 300000, "actual_qty": null, "actual_value": 0, "vendor": ""}].map(d => ({...d, source:'seed', id:null}));
+let REGISTER_SEED = [{"no": 1, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "Package Line Official Account (Pro Package) เดือนตุลาคม", "unit": "รายการต่อเดือน", "qty": 1, "unit_price": 1904.6, "total": 1904.6, "renew_flag": "/", "renew_period": "รายเดือน", "delivery_due": "01/10/2568", "expire_year": "2568", "expire_date": "31/10/2568", "vendor": "Line Company (Thailiand) Limited", "responsible": "นางสาวเกสริน ทองสมัคร์", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "ครุภัณฑ์/โครงการ-ประชุม-อบรม", "attachment": "", "status": "", "location": ""}, {"no": 2, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "Line Official Account Premium ID", "unit": "รายการต่อปี", "qty": 1, "unit_price": 475.08, "total": 475.08, "renew_flag": "/", "renew_period": "รายปี", "delivery_due": "01/11/2568", "expire_year": "2569", "expire_date": "01/11/2569", "vendor": "Line Company (Thailiand) Limited", "responsible": "นางสาวเกสริน ทองสมัคร์", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "งบรัฐ", "attachment": "", "status": "", "location": ""}, {"no": 3, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "Corporate SMS", "unit": "รายการต่อปี", "qty": 1, "unit_price": 10451.76, "total": 10451.76, "renew_flag": "/", "renew_period": "ตามจำนวนการใช้งาน", "delivery_due": "", "expire_year": "", "expire_date": "", "vendor": "บริษัท วันม๊อบบี้ จำกัด", "responsible": "นางสาวธัญญา วิชัย", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}, {"no": 4, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "ซิมการ์ดประเภทเติมเงิน รายปี (12 เดือน)", "unit": "ระบบ", "qty": 4, "unit_price": 809, "total": 3236, "renew_flag": "/", "renew_period": "รายปี", "delivery_due": "20/08/2567", "expire_year": "2568", "expire_date": "20/08/2568", "vendor": "", "responsible": "นายศุภเชษฐ์ แก้วสุด", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}, {"no": 5, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "Dev Express", "unit": "license", "qty": null, "unit_price": null, "total": null, "renew_flag": "", "renew_period": "", "delivery_due": "", "expire_year": "", "expire_date": "", "vendor": "", "responsible": "นายศรัณย์ เพียงจันทร์", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}, {"no": 6, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "SSL", "unit": "ระบบ", "qty": 1, "unit_price": null, "total": null, "renew_flag": "/", "renew_period": "3 ปี", "delivery_due": "", "expire_year": "", "expire_date": "", "vendor": "", "responsible": "นายศรัณย์ เพียงจันทร์", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}, {"no": 7, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "การบำรุงรักษาระบบเครือข่ายระยะเวลา 3 ปี 2567-2570", "unit": "ระบบ", "qty": 1, "unit_price": 7482000, "total": 7482000, "renew_flag": "/", "renew_period": "3 ปี", "delivery_due": "30/08/2567", "expire_year": "2570", "expire_date": "30/08/2570", "vendor": "บริษัท Firstone System จำกัด", "responsible": "นายอภิรักษ์ ใจซื่อ", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}, {"no": 8, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "ระบบป้องกันภัยคุกคามสารสนเทศทางการแพทย์ (Cyber Security)", "unit": "ระบบ", "qty": 1, "unit_price": 21500000, "total": 21500000, "renew_flag": "/", "renew_period": "3 ปี", "delivery_due": "23/04/2566", "expire_year": "2569", "expire_date": "28/04/2569", "vendor": "บริษัท Firstone System จำกัด", "responsible": "นายพีรชัย อินทรคำ", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}, {"no": 9, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "ระบบจัดเก็บและสำรองข้อมูลสารสนเทศทางการแพทย์ (ครุภัณฑ์กลุ่มงานสารสนเทศ)", "unit": "ระบบ", "qty": 1, "unit_price": 27030900, "total": 27030900, "renew_flag": "/", "renew_period": "5 ปี", "delivery_due": "12/01/2566", "expire_year": "2570", "expire_date": "12/01/2570", "vendor": "บริษัท ซิสเนค อินฟอเมชั่น จำกัด", "responsible": "นายอภิรักษ์ ใจซื่อ", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}, {"no": 10, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "เครื่องพิมพ์", "unit": "", "qty": 1, "unit_price": null, "total": null, "renew_flag": "/", "renew_period": "", "delivery_due": "", "expire_year": "2570", "expire_date": "", "vendor": "", "responsible": "", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}, {"no": 11, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "ระบบแพทย์ทางไกลสำหรับให้บริการทางการแพทย์", "unit": "ระบบ", "qty": 1, "unit_price": 3100000, "total": 3100000, "renew_flag": "/", "renew_period": "5 ปี", "delivery_due": "30/07/2567", "expire_year": "2572", "expire_date": "30/07/2572", "vendor": "บริษัท ซิสเนค อินฟอเมชั่น จำกัด", "responsible": "นายพีรชัย อินทรคำ", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}, {"no": 12, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "ระบบติดตามและแจ้งเตือนสำหรับผู้ป่วยที่ต้องเฝ้าระวังเป็นพิเศษ (Patient Tracking)", "unit": "ระบบ", "qty": 1, "unit_price": 22781000, "total": 22781000, "renew_flag": "/", "renew_period": "", "delivery_due": "", "expire_year": "", "expire_date": "", "vendor": "", "responsible": "", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}, {"no": 13, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "ระบบเน็ตเวิร์ค (Network Service DNS, DHCP Appliance)", "unit": "ระบบ", "qty": 2, "unit_price": 2931800, "total": 5863600, "renew_flag": "/", "renew_period": "5 ปี", "delivery_due": "", "expire_year": "", "expire_date": "", "vendor": "", "responsible": "", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}, {"no": 14, "category": "ซอฟต์แวร์/ระบบบริการ", "plan_code": "", "name": "สัญญาจ้างบำรุงรักษาระบบโทรศัพท์และระบบตอบรับอโนมัติ จำนวน 1 ระบบ", "unit": "ระบบ", "qty": 1, "unit_price": 800000, "total": 800000, "renew_flag": "/", "renew_period": "1 ปี", "delivery_due": "", "expire_year": "2569", "expire_date": "26/12/2569", "vendor": "บริษัท เดอะ แวเรียส อินโนเวชั่น จำกัด", "responsible": "สาธิต ขวัญชุม", "doc_no": "", "note": "", "warranty_expire": "", "received_date": "", "per_plan": "/", "item_type": "", "attachment": "", "status": "", "location": ""}].map((d,i) => ({...d, id:'s'+(d.no ?? i), source:'seed'}));
+
+let userRecords = [];
+
+// ---------- Google Sheet sync (via Apps Script web app) ----------
+const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby0ekHStak2nKfudBnMFlol60Ogu5jbXYcXggI-U7-H6-Tistxoa9ezwgm0MSPLRzg12Q/exec';
+const APPS_SCRIPT_URL_KEY_ = 'procurement_dashboard_apps_script_url';
+function getAppsScriptUrl(){
+  try{
+    const v = localStorage.getItem(APPS_SCRIPT_URL_KEY_);
+    return v && v.trim() ? v.trim() : DEFAULT_APPS_SCRIPT_URL;
+  }catch(e){
+    return DEFAULT_APPS_SCRIPT_URL;
+  }
+}
+
+
+function jsonpCall(url, params){
+  return new Promise((resolve, reject)=>{
+    const cb = '__gs_cb_' + Date.now() + '_' + Math.floor(Math.random()*1e6);
+    const sc = document.createElement('script');
+    const timer = setTimeout(()=>{ cleanup(); reject(new Error('หมดเวลารอ Apps Script (JSONP)')); }, 20000);
+    function cleanup(){ clearTimeout(timer); delete window[cb]; sc.remove(); }
+    window[cb] = (data)=>{ cleanup(); resolve(data); };
+    sc.onerror = ()=>{ cleanup(); reject(new Error('โหลดสคริปต์จาก Apps Script ไม่ได้ (JSONP)')); };
+    sc.src = url + '?' + params + '&callback=' + cb;
+    document.head.appendChild(sc);
+  });
+}
+
+// เรียก Apps Script: ลอง fetch ก่อน ถ้าไม่ได้ (CORS/redirect/network) ลอง JSONP สำรอง
+async function gsCall(params){
+  const url = getAppsScriptUrl();
+  if(!url) throw new Error('ยังไม่ได้ตั้งค่า Apps Script URL');
+  let fetchErr = '';
+  try{
+    const res = await fetch(url + '?' + params);
+    const text = await res.text();
+    try{ return JSON.parse(text); }
+    catch(_){
+      if(text.includes('accounts.google.com') || text.includes('ServiceLogin')){
+        throw new Error('Apps Script ต้องการ Login — ตั้ง "Who has access" เป็น "Anyone" แล้ว Deploy ใหม่');
+      }
+      fetchErr = 'ได้ข้อมูลที่ไม่ใช่ JSON (HTTP ' + res.status + ')';
+    }
+  }catch(e){
+    if(e.message && e.message.startsWith('Apps Script ต้องการ')) throw e;
+    fetchErr = e.message || 'fetch ล้มเหลว';
+  }
+  try{
+    return await jsonpCall(url, params);
+  }catch(e2){
+    throw new Error('เชื่อมต่อ Apps Script ไม่ได้ (' + fetchErr + '; ' + e2.message + ') — เช็ค URL ลงท้าย /exec, Who has access = Anyone, และวางโค้ด v4 + Deploy ใหม่');
+  }
+}
+
+async function fetchSheetRows(sheetName){
+  if(!getAppsScriptUrl()) return null;
+  const data = await gsCall(`action=list&sheet=${encodeURIComponent(sheetName)}`);
+  if(data.error) throw new Error('Apps Script error: ' + data.error);
+  return data.rows || [];
+}
+
+async function appendSheetRow(sheetName, rowArray){
+  const url = getAppsScriptUrl();
+  if(!url) return false;
+  try{
+    const data = await gsCall(`action=add&sheet=${encodeURIComponent(sheetName)}&row=${encodeURIComponent(JSON.stringify(rowArray))}`);
+    return !!data.success;
+  }catch(e){
+    return false;
+  }
+}
+
+async function updateSheetRow(sheetName, rowNum, rowArray){
+  const url = getAppsScriptUrl();
+  if(!url || !rowNum) return false;
+  try{
+    const data = await gsCall(`action=update&sheet=${encodeURIComponent(sheetName)}&row_num=${rowNum}&row=${encodeURIComponent(JSON.stringify(rowArray))}`);
+    return !!data.success;
+  }catch(e){
+    return false;
+  }
+}
+
+async function deleteSheetRow(sheetName, rowNum){
+  const url = getAppsScriptUrl();
+  if(!url || !rowNum) return false;
+  try{
+    const data = await gsCall(`action=delete&sheet=${encodeURIComponent(sheetName)}&row_num=${rowNum}`);
+    return !!data.success;
+  }catch(e){
+    return false;
+  }
+}
+
+function setSyncStatus(state, note){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  el.className = 'sync-status ' + state;
+  const labels = {
+    connecting: '🔄 กำลังเชื่อมต่อ Google Sheet...',
+    connected: '🟢 เชื่อมต่อ Google Sheet แล้ว',
+    offline: '⚪ ใช้ข้อมูลในไฟล์ (ยังไม่ได้เชื่อมต่อ Google Sheet)',
+    error: '🔴 เชื่อมต่อ Google Sheet ไม่สำเร็จ — ใช้ข้อมูลในไฟล์แทน',
+  };
+  el.textContent = labels[state] || '';
+  if(note){
+    el.textContent += ' — รายละเอียด: ' + note;
+    el.title = note;
+  }
+}
+
+function parseBudgetRowsFromSheet(rows){
+  // rows[0]=title, rows[1]=blank, rows[2]=header, rows[3+]=data
+  const dataRows = rows.slice(3);
+  const out = [];
+  dataRows.forEach((r, idx) => {
+    if(!(r[2] && r[2] !== 'รวมทั้งหมด' && typeof r[0] === 'number')) return;
+    out.push({
+      _row: 4 + idx, // actual row number in the sheet (1-based)
+      year: r[0] || null,
+      category: r[1] || '',
+      name: r[2] || '',
+      unit: r[3] || '',
+      unit_price: (typeof r[4]==='number') ? r[4] : null,
+      qty: (typeof r[5]==='number') ? r[5] : null,
+      budget: (typeof r[6]==='number') ? r[6] : 0,
+      actual_qty: (typeof r[7]==='number') ? r[7] : null,
+      actual_value: (typeof r[8]==='number') ? r[8] : 0,
+      vendor: r[9] || '',
+      plan_code: r[10] || '',
+    });
+  });
+  return out;
+}
+
+function parseRegisterRowsFromSheet(rows){
+  const dataRows = rows.slice(3);
+  const out = [];
+  dataRows.forEach((r, idx) => {
+    if(!r[2]) return;
+    out.push({
+      _row: 4 + idx, // actual row number in the sheet (1-based)
+      no: r[0] ?? (idx+1),
+      category: r[1] || '',
+      plan_code: '',
+      name: r[2] || '',
+      unit: r[3] || '',
+      qty: (typeof r[4]==='number') ? r[4] : null,
+      unit_price: (typeof r[5]==='number') ? r[5] : null,
+      total: (typeof r[6]==='number') ? r[6] : null,
+      renew_period: r[7] || '',
+      delivery_due: r[8] || '',
+      expire_year: r[9] || '',
+      expire_date: r[10] || '',
+      vendor: r[11] || '',
+      responsible: r[12] || '',
+      doc_no: r[13] || '',
+      status: r[14] || '',
+      note: r[15] || '',
+      warranty_expire: '', received_date: '', per_plan: '', item_type: '', attachment: '', location: '',
+    });
+  });
+  return out;
+}
+
+function parseVendorRowsFromSheet(rows){
+  // rows[0]=header, rows[1+]=data (simple single-header-row sheet)
+  const dataRows = rows.slice(1);
+  const out = [];
+  dataRows.forEach((r, idx) => {
+    if(!r[0]) return;
+    out.push({
+      _row: 2 + idx,
+      id: 's' + (2 + idx),
+      company: r[0] || '',
+      address: r[1] || '',
+      contact_name: r[2] || '',
+      phone: r[3] || '',
+      note: r[4] || '',
+    });
+  });
+  return out;
+}
+
+async function connectGoogleSheet(){
+  setSyncStatus('connecting');
+  try{
+    const url = getAppsScriptUrl();
+    if(url){ try{ await gsCall('action=setup_budget_code'); }catch(_){} } // non-fatal: adds "รหัสงบประมาณ" header
+    const [budgetRows, registerRows] = await Promise.all([
+      fetchSheetRows('รายการงบประมาณ'),
+      fetchSheetRows('ทะเบียนจัดซื้อจัดจ้าง'),
+    ]);
+    const parsedBudget = parseBudgetRowsFromSheet(budgetRows);
+    const parsedRegister = parseRegisterRowsFromSheet(registerRows);
+    if(parsedBudget.length){
+      SEED_DATA = parsedBudget.map(d => ({...d, source:'seed', id:'s'+d._row}));
+    }
+    if(parsedRegister.length){
+      REGISTER_SEED = parsedRegister.map((d,i) => ({...d, id:'s'+(d.no ?? i), source:'seed'}));
+    }
+    rebuildData();
+    rebuildRegister();
+    setSyncStatus('connected');
+    renderAll();
+    populateRegSelect();
+    populateBudgetSelect();
+    if(document.querySelector('.menu-item.active')?.dataset.view === 'register') renderRegister();
+  }catch(e){
+    setSyncStatus('error', e.message);
+  }
+  // vendor sheet sync is independent — don't fail the whole connection if this tab is missing
+  try{
+    const url = getAppsScriptUrl();
+    if(url){ try{ await gsCall('action=setup_vendors'); }catch(_){} }
+    const vendorRows = await fetchSheetRows('ทะเบียนผู้ขาย');
+    const parsedVendors = parseVendorRowsFromSheet(vendorRows);
+    vendors = parsedVendors;
+    if(document.querySelector('.menu-item.active')?.dataset.view === 'vendors') renderVendors();
+  }catch(e){
+    // silently keep whatever vendors are already loaded (e.g. from localStorage) if setup/fetch fails
+  }
+}
+let DATA = [...SEED_DATA];
+
+let registerOverrides = {};
+let addedRegister = [];
+let REGISTER_DATA = [...REGISTER_SEED];
+
+function rebuildRegister(){
+  const overridden = REGISTER_SEED.map(r => registerOverrides[r.id] ? {...r, ...registerOverrides[r.id]} : r);
+  REGISTER_DATA = [...overridden, ...addedRegister];
+}
+
+const REG_OVERRIDE_KEY = 'procurement_dashboard_register_overrides';
+const REG_ADDED_KEY = 'procurement_dashboard_added_register';
+
+async function loadRegisterStorage(){
+  try{
+    const raw = localStorage.getItem(REG_OVERRIDE_KEY);
+    registerOverrides = raw ? JSON.parse(raw) : {};
+  }catch(e){ registerOverrides = {}; }
+  try{
+    const raw2 = localStorage.getItem(REG_ADDED_KEY);
+    addedRegister = raw2 ? JSON.parse(raw2) : [];
+  }catch(e){ addedRegister = []; }
+  rebuildRegister();
+  populateRegSelect();
+  if(document.querySelector('.menu-item.active')?.dataset.view === 'register') renderRegister();
+  renderExpiring();
+  renderCards();
+  renderGauges();
+}
+
+async function saveRegisterOverrides(){
+  try{ localStorage.setItem(REG_OVERRIDE_KEY, JSON.stringify(registerOverrides)); return true; }
+  catch(e){ return false; }
+}
+async function saveAddedRegister(){
+  try{ localStorage.setItem(REG_ADDED_KEY, JSON.stringify(addedRegister)); return true; }
+  catch(e){ return false; }
+}
+
+const fmt = n => (n||0).toLocaleString('th-TH', {maximumFractionDigits:0});
+const fmt2 = n => (n||0).toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+let currentYear = 'all';
+let sortKey = 'budget';
+let sortAsc = false;
+let regSortKey = 'total';
+let regSortAsc = false;
+
+// ---------- storage (localStorage - works when opened as a local file) ----------
+const STORAGE_KEY = 'procurement_dashboard_added_records';
+
+async function loadUserRecords(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    userRecords = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    userRecords = [];
+  }
+  rebuildData();
+  renderAll();
+}
+
+async function saveUserRecords(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(userRecords));
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+function rebuildData(){
+  DATA = [...SEED_DATA, ...userRecords.map(d=>({...d, source:'user'}))];
+}
+
+// ---------- menu switch ----------
+document.querySelectorAll('.menu-item').forEach(m=>{
+  m.addEventListener('click', ()=>{
+    document.querySelectorAll('.menu-item').forEach(x=>x.classList.remove('active'));
+    m.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+m.dataset.view).classList.add('active');
+    if(m.dataset.view === 'budget-list') renderManage();
+    if(m.dataset.view === 'register') renderRegister();
+    if(m.dataset.view === 'vendors') renderVendors();
+  });
+});
+
+// ---------- toggle add/edit form panels ----------
+const addFormSection = document.getElementById('addFormSection');
+const toggleAddFormBtn = document.getElementById('toggleAddFormBtn');
+function showAddForm(){
+  addFormSection.style.display = 'block';
+  toggleAddFormBtn.textContent = 'ซ่อนฟอร์ม';
+  addFormSection.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function hideAddForm(){
+  addFormSection.style.display = 'none';
+  toggleAddFormBtn.textContent = '+ เพิ่มรายการใหม่';
+}
+toggleAddFormBtn.addEventListener('click', ()=>{
+  if(addFormSection.style.display === 'none') showAddForm(); else hideAddForm();
+});
+document.getElementById('cancelAddFormBtn').addEventListener('click', ()=>{
+  document.getElementById('addForm').reset();
+  document.getElementById('f-select').value = '';
+  hideAddForm();
+});
+
+const regFormSection = document.getElementById('regFormSection');
+const toggleRegFormBtn = document.getElementById('toggleRegFormBtn');
+function showRegForm(){
+  regFormSection.style.display = 'block';
+  toggleRegFormBtn.textContent = 'ซ่อนฟอร์ม';
+  regFormSection.scrollIntoView({behavior:'smooth', block:'start'});
+  populateVendorOptions();
+}
+function hideRegForm(){
+  regFormSection.style.display = 'none';
+  toggleRegFormBtn.textContent = '+ เพิ่มรายการใหม่';
+}
+toggleRegFormBtn.addEventListener('click', ()=>{
+  if(regFormSection.style.display === 'none') showRegForm(); else hideRegForm();
+});
+document.getElementById('cancelRegFormBtn').addEventListener('click', ()=>{
+  document.getElementById('regForm').reset();
+  document.getElementById('r-select').value = '';
+  hideRegForm();
+});
+
+const vendorFormSection = document.getElementById('vendorFormSection');
+const toggleVendorFormBtn = document.getElementById('toggleVendorFormBtn');
+function showVendorForm(){
+  vendorFormSection.style.display = 'block';
+  toggleVendorFormBtn.textContent = 'ซ่อนฟอร์ม';
+  vendorFormSection.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function hideVendorForm(){
+  vendorFormSection.style.display = 'none';
+  toggleVendorFormBtn.textContent = '+ เพิ่มผู้ขายใหม่';
+}
+toggleVendorFormBtn.addEventListener('click', ()=>{
+  if(vendorFormSection.style.display === 'none') showVendorForm(); else hideVendorForm();
+});
+document.getElementById('cancelVendorFormBtn').addEventListener('click', ()=>{
+  document.getElementById('vendorForm').reset();
+  document.getElementById('v-select').value = '';
+  hideVendorForm();
+});
+
+// ---------- year tabs (apply to dashboard / budget-list / budget-cat) ----------
+const yearTabs = document.getElementById('yearTabs');
+const EXTRA_YEARS_KEY = 'procurement_dashboard_extra_years';
+let extraYears = [];
+try{ extraYears = JSON.parse(localStorage.getItem(EXTRA_YEARS_KEY) || '[]').filter(Number.isFinite); }catch(e){}
+function renderTabs(){
+  const years = [...new Set([...DATA.map(d=>d.year), ...extraYears])].filter(Boolean).sort((a,b)=>b-a);
+  const opts = [{v:'all', label:'ทุกปีงบประมาณ'}, ...years.map(y=>({v:y, label:'ปี '+y}))];
+  yearTabs.innerHTML = opts.map(o =>
+    `<div class="tab ${currentYear===o.v?'active':''}" data-y="${o.v}">${o.label}</div>`
+  ).join('') + '<div class="tab" id="addYearTab" title="เพิ่มปีงบประมาณใหม่">+ เพิ่มปีงบ</div>';
+  yearTabs.querySelectorAll('.tab[data-y]').forEach(t=>{
+    t.addEventListener('click', ()=>{ currentYear = t.dataset.y === 'all' ? 'all' : Number(t.dataset.y); renderAll(); });
+  });
+  document.getElementById('addYearTab').addEventListener('click', addFiscalYear);
+}
+
+function addFiscalYear(){
+  const latest = Math.max(0, ...DATA.map(d=>d.year||0), ...extraYears);
+  const input = prompt('เพิ่มปีงบประมาณ (พ.ศ. 4 หลัก)', latest ? String(latest+1) : '');
+  if(input === null) return;
+  const y = Number(String(input).trim());
+  if(!Number.isInteger(y) || y < 2500 || y > 2700){
+    alert('กรุณาใส่ปี พ.ศ. 4 หลัก เช่น 2570');
+    return;
+  }
+  if(!extraYears.includes(y) && !DATA.some(d=>d.year===y)){
+    extraYears.push(y);
+    try{ localStorage.setItem(EXTRA_YEARS_KEY, JSON.stringify(extraYears)); }catch(e){}
+  }
+  currentYear = y;
+  renderAll();
+  // ไปหน้ารายการงบประมาณ เปิดฟอร์มพร้อมใส่ปีให้ — ปีจะถูกบันทึกลง Google Sheet เมื่อบันทึกรายการแรก
+  document.querySelector('.menu-item[data-view="budget-list"]').click();
+  document.getElementById('f-select').value = '';
+  fillBudgetForm({year:y});
+  showAddForm();
+}
+
+function currentRows(){
+  return currentYear==='all' ? DATA : DATA.filter(d=>d.year===currentYear);
+}
+
+// ---------- summary cards (shared calc) ----------
+// ---------- actual-used figures sourced from ทะเบียนจัดซื้อจัดจ้าง only ----------
+function registerActualTotal(year){
+  return REGISTER_DATA.reduce((s,r)=>{
+    if(year !== 'all' && r.budget_year !== year) return s; // no year tagged -> only counted in "all"
+    return s + (r.total || 0);
+  }, 0);
+}
+
+function registerActualByCategory(year){
+  const map = {};
+  REGISTER_DATA.forEach(r=>{
+    if(year !== 'all' && r.budget_year !== year) return; // no year tagged -> only counted in "all"
+    const cat = r.category || 'ไม่ระบุหมวดหมู่';
+    map[cat] = (map[cat] || 0) + (r.total || 0);
+  });
+  return map;
+}
+
+function summaryCardsHtml(totalBudget, totalActual, count, yearLabel){
+  const remain = totalBudget - totalActual;
+  const rate = totalBudget>0 ? (totalActual/totalBudget*100) : 0;
+  const cards = [
+    {cls:'total', label:'งบประมาณที่ตั้งไว้', value:fmt(totalBudget)+' ฿', foot:count+' รายการ'},
+    {cls:'used', label:'ใช้ไปแล้วจริง', value:fmt(totalActual)+' ฿', foot:rate.toFixed(1)+'% ของงบทั้งหมด (จากทะเบียนจัดซื้อจัดจ้าง)'},
+    {cls:'remain', label:'คงเหลือ', value:fmt(remain)+' ฿', foot:'ยังไม่ได้เบิกจ่าย'},
+    {cls:'rate', label:'อัตราเบิกจ่าย', value:rate.toFixed(1)+'%', foot:yearLabel},
+  ];
+  return cards.map(c=>
+    `<div class="card ${c.cls}"><div class="label">${c.label}</div><div class="value mono">${c.value}</div><div class="foot">${c.foot}</div></div>`
+  ).join('');
+}
+
+function renderCards(){
+  const rows = currentRows();
+  const yearLabel = currentYear==='all' ? 'ทุกปีงบประมาณ' : ('ปีงบประมาณ '+currentYear);
+  const totalBudget = rows.reduce((s,d)=>s+(d.budget||0),0);
+  const totalActual = registerActualTotal(currentYear);
+  const html = summaryCardsHtml(totalBudget, totalActual, rows.length, yearLabel);
+  document.getElementById('summaryCards').innerHTML = html;
+  document.getElementById('catSummaryCards').innerHTML = html;
+}
+
+// ---------- gauges (shared builder) ----------
+function gaugesHtml(rows, actualByCat, limit){
+  const byCat = {};
+  rows.forEach(d=>{
+    const key = currentYear==='all' ? (d.year+' · '+d.category) : d.category;
+    if(!byCat[key]) byCat[key] = {budget:0, count:0, category:d.category};
+    byCat[key].budget += d.budget||0;
+    byCat[key].count += 1;
+  });
+  let entries = Object.entries(byCat).map(([key,v])=>{
+    const actual = actualByCat[v.category] || 0;
+    return [key, {...v, actual}];
+  }).sort((a,b)=>b[1].budget-a[1].budget);
+  if(limit) entries = entries.slice(0, limit);
+  return entries.map(([cat,v])=>{
+    const pct = v.budget>0 ? Math.min(100,(v.actual/v.budget*100)) : 0;
+    const over = v.actual > v.budget && v.budget>0;
+    const ticks = Array.from({length:10}).map(()=>'<span></span>').join('');
+    return `
+    <div class="gauge-row">
+      <div class="gauge-top">
+        <div class="gauge-cat">${cat} <span class="gauge-count">(${v.count} รายการ)</span></div>
+        <div class="gauge-figs"><b>${fmt(v.actual)}</b> / ${fmt(v.budget)} ฿</div>
+      </div>
+      <div class="vial">
+        <div class="vial-fill ${over?'over':''}" style="width:${v.budget>0?Math.max(pct,1.5):0}%"></div>
+        <div class="vial-ticks">${ticks}</div>
+        <div class="vial-pct">${v.budget>0 ? pct.toFixed(0)+'%' : 'ไม่มีงบ'}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div class="gauge-row" style="text-align:center;color:var(--ink-soft)">ไม่มีข้อมูล</div>';
+}
+
+function renderGauges(){
+  const rows = currentRows();
+  const actualByCat = registerActualByCategory(currentYear);
+  document.getElementById('gaugeListFull').innerHTML = gaugesHtml(rows, actualByCat);
+  document.getElementById('gaugeListMini').innerHTML = gaugesHtml(rows, actualByCat, 3);
+}
+
+// ---------- expiring contracts (dashboard) ----------
+function parseThaiDate(s){
+  // format dd/mm/yyyy (buddhist year)
+  if(!s) return null;
+  const parts = s.split('/');
+  if(parts.length!==3) return null;
+  const d = parseInt(parts[0],10), m = parseInt(parts[1],10), y = parseInt(parts[2],10) - 543;
+  if(!d||!m||!y) return null;
+  return new Date(y, m-1, d);
+}
+function renderExpiring(){
+  const today = new Date();
+  const withDates = REGISTER_DATA
+    .map(r => ({...r, _date: parseThaiDate(r.expire_date)}))
+    .filter(r => r._date);
+
+  const oneYearFromNow = new Date(today);
+  oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
+  const expiring = withDates
+    .filter(r => r._date >= today && r._date <= oneYearFromNow)
+    .sort((a,b) => a._date - b._date);
+
+  const expired = withDates
+    .filter(r => r._date < today)
+    .sort((a,b) => b._date - a._date);
+
+  const expiringBody = document.getElementById('expiringBody');
+  if(expiring.length===0){
+    expiringBody.innerHTML = '<tr class="empty-row"><td colspan="4">ไม่มีรายการที่ใกล้หมดอายุภายใน 1 ปี</td></tr>';
+  }else{
+    expiringBody.innerHTML = expiring.map(r=>{
+      const days = Math.round((r._date - today)/(1000*60*60*24));
+      const urgent = days <= 90;
+      return `<tr${urgent ? ' style="color:var(--coral);"' : ''}>
+        <td class="name">${r.name}</td>
+        <td>${r.vendor || '-'}</td>
+        <td>${r.responsible || '-'}</td>
+        <td>${r.expire_date}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  const expiredBody = document.getElementById('expiredBody');
+  if(expired.length===0){
+    expiredBody.innerHTML = '<tr class="empty-row"><td colspan="4">ไม่มีรายการที่หมดอายุแล้ว</td></tr>';
+  }else{
+    expiredBody.innerHTML = expired.map(r=>`<tr style="color:var(--coral);">
+      <td class="name">${r.name}</td>
+      <td>${r.vendor || '-'}</td>
+      <td>${r.responsible || '-'}</td>
+      <td>${r.expire_date}</td>
+    </tr>`).join('');
+  }
+}
+
+// ---------- budget-list table ----------
+const catFilter = document.getElementById('catFilter');
+function renderCatFilter(){
+  const cats = [...new Set(currentRows().map(d=>d.category))].sort();
+  const cur = catFilter.value;
+  catFilter.innerHTML = '<option value="">ทุกหมวดหมู่</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  if(cats.includes(cur)) catFilter.value = cur;
+}
+
+function renderTable(){
+  let rows = currentRows();
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  const cat = catFilter.value;
+  if(q) rows = rows.filter(d => (d.name||'').toLowerCase().includes(q));
+  if(cat) rows = rows.filter(d => d.category===cat);
+
+  rows = [...rows].sort((a,b)=>{
+    let av = a[sortKey], bv = b[sortKey];
+    if(typeof av === 'string' || typeof bv === 'string'){
+      av = (av||'').toString(); bv = (bv||'').toString();
+      return sortAsc ? av.localeCompare(bv,'th') : bv.localeCompare(av,'th');
+    }
+    av = av||0; bv = bv||0;
+    return sortAsc ? av-bv : bv-av;
+  });
+
+  document.getElementById('countPill').textContent = rows.length + ' รายการ';
+  document.getElementById('tableNote').textContent = currentYear==='all'
+    ? 'แสดงทุกปีงบประมาณ — คลิกหัวตารางเพื่อจัดเรียง'
+    : 'แสดงปีงบประมาณ ' + currentYear + ' — คลิกหัวตารางเพื่อจัดเรียง';
+
+  const body = document.getElementById('tableBody');
+  if(rows.length===0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="9">ไม่พบรายการที่ตรงกับเงื่อนไข</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(d => `
+    <tr>
+      <td><span class="badge">${d.year}</span></td>
+      <td>${d.category}</td>
+      <td>${d.plan_code || '-'}</td>
+      <td class="name">${d.name || '-'}</td>
+      <td>${d.unit || '-'}</td>
+      <td class="num">${d.unit_price!=null ? fmt2(d.unit_price) : '-'}</td>
+      <td class="num">${fmt2(d.budget)}</td>
+      <td class="num">${fmt2(d.actual_value)}</td>
+      <td>
+        <button type="button" class="del-btn" data-bedit="${d.id}" style="background:var(--primary-tint);color:var(--primary-dark);">แก้ไข</button>
+        ${d._row ? `<button type="button" class="del-btn" data-bdelrow="${d._row}">ลบ</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+
+  body.querySelectorAll('[data-bedit]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.getElementById('f-select').value = btn.dataset.bedit;
+      document.getElementById('f-select').dispatchEvent(new Event('change'));
+      showAddForm();
+      document.getElementById('f-name').focus();
+    });
+  });
+
+  body.querySelectorAll('[data-bdelrow]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('ยืนยันลบรายการนี้ออกจาก Google Sheet ถาวรหรือไม่?')) return;
+      btn.disabled = true; btn.textContent = '...';
+      const rowNum = Number(btn.dataset.bdelrow);
+      const ok = await deleteSheetRow('รายการงบประมาณ', rowNum);
+      if(ok){
+        await connectGoogleSheet();
+      }else{
+        alert('ลบไม่สำเร็จ กรุณาลองใหม่ หรือเช็คการเชื่อมต่อ');
+        btn.disabled = false; btn.textContent = 'ลบ';
+      }
+    });
+  });
+}
+
+document.querySelectorAll('#view-budget-list thead th[data-key]').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if(sortKey===key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = false; }
+    document.querySelectorAll('#view-budget-list thead th').forEach(t=>t.classList.remove('sorted','asc'));
+    th.classList.add('sorted'); if(sortAsc) th.classList.add('asc');
+    renderTable();
+  });
+});
+document.getElementById('searchBox').addEventListener('input', renderTable);
+catFilter.addEventListener('change', renderTable);
+
+// ---------- manage (added records) ----------
+function renderManage(){
+  const cats = [...new Set(DATA.map(d=>d.category))].sort();
+  document.getElementById('catList').innerHTML = cats.map(c=>`<option value="${c}"></option>`).join('');
+  populateBudgetSelect();
+}
+
+function populateBudgetSelect(){
+  const sel = document.getElementById('f-select');
+  const cur = sel.value;
+  const order = [...DATA].map((d,i)=>i).filter(i=>DATA[i].id).reverse();
+  const opts = ['<option value="">-- เพิ่มรายการใหม่ --</option>']
+    .concat(order.map(i => `<option value="${DATA[i].id}">${(DATA[i].name||'(ไม่มีชื่อ)').slice(0,60)}</option>`));
+  sel.innerHTML = opts.join('');
+  if([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+}
+
+function fillBudgetForm(d){
+  document.getElementById('f-year').value = d?.year || '';
+  document.getElementById('f-category').value = d?.category || '';
+  document.getElementById('f-plan-code').value = d?.plan_code || '';
+  document.getElementById('f-name').value = d?.name || '';
+  document.getElementById('f-unit').value = d?.unit || '';
+  document.getElementById('f-unit-price').value = d?.unit_price ?? '';
+  document.getElementById('f-budget').value = d?.budget ?? '';
+  document.getElementById('f-actual').value = d?.actual_value ?? '';
+  document.getElementById('f-vendor').value = d?.vendor || '';
+}
+
+document.getElementById('f-select').addEventListener('change', (e)=>{
+  const id = e.target.value;
+  if(!id){ fillBudgetForm(null); return; }
+  const rec = DATA.find(d=>d.id===id);
+  fillBudgetForm(rec);
+});
+
+// ---------- add form ----------
+document.getElementById('addForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const status = document.getElementById('formStatus');
+  const submitBtn = document.getElementById('submitBtn');
+  const selId = document.getElementById('f-select').value;
+
+  const year = Number(document.getElementById('f-year').value);
+  const category = document.getElementById('f-category').value.trim();
+  const plan_code = document.getElementById('f-plan-code').value.trim();
+  const name = document.getElementById('f-name').value.trim();
+  const unit = document.getElementById('f-unit').value.trim();
+  const unit_price = document.getElementById('f-unit-price').value ? Number(document.getElementById('f-unit-price').value) : null;
+  const budget = document.getElementById('f-budget').value ? Number(document.getElementById('f-budget').value) : 0;
+  const actual_value = document.getElementById('f-actual').value ? Number(document.getElementById('f-actual').value) : 0;
+  const vendor = document.getElementById('f-vendor').value.trim();
+
+  if(!year || !category || !name){
+    status.textContent = 'กรุณากรอกปีงบประมาณ หมวดหมู่ และชื่อรายการ';
+    status.className = 'form-status err';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  status.textContent = 'กำลังบันทึก...';
+  status.className = 'form-status';
+
+  const rowValues = [year, category, name, unit, unit_price, null, budget, null, actual_value, vendor, plan_code];
+
+  if(selId){
+    const rec = DATA.find(d=>d.id===selId);
+    if(rec && rec._row){
+      const synced = await updateSheetRow('รายการงบประมาณ', rec._row, rowValues);
+      if(synced){
+        status.textContent = 'แก้ไขรายการเรียบร้อย';
+        status.className = 'form-status ok';
+        document.getElementById('addForm').reset();
+        document.getElementById('f-select').value = '';
+        await connectGoogleSheet();
+        hideAddForm();
+      }else{
+        status.textContent = 'แก้ไขไม่สำเร็จ กรุณาลองใหม่ หรือเช็คการเชื่อมต่อ';
+        status.className = 'form-status err';
+      }
+    }else{
+      status.textContent = 'ไม่พบรายการนี้ในระบบ (อาจยังไม่เชื่อมต่อ Google Sheet)';
+      status.className = 'form-status err';
+    }
+  }else{
+    const synced = await appendSheetRow('รายการงบประมาณ', rowValues);
+    if(synced){
+      status.textContent = 'บันทึกรายการเรียบร้อย';
+      status.className = 'form-status ok';
+      document.getElementById('addForm').reset();
+      await connectGoogleSheet();
+      hideAddForm();
+    }else{
+      status.textContent = 'บันทึกไม่สำเร็จ กรุณาลองใหม่ หรือเช็คการเชื่อมต่อ';
+      status.className = 'form-status err';
+    }
+  }
+  submitBtn.disabled = false;
+});
+
+// ---------- register view ----------
+const regCatFilter = document.getElementById('regCatFilter');
+function renderRegCatFilter(){
+  const cats = [...new Set(REGISTER_DATA.map(d=>d.category))].filter(Boolean).sort();
+  const cur = regCatFilter.value;
+  regCatFilter.innerHTML = '<option value="">ทุกหมวดหมู่</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  if(cats.includes(cur)) regCatFilter.value = cur;
+}
+
+function fieldsCompleteness(d){
+  const keys = ['unit','qty','unit_price','vendor','responsible','renew_period','delivery_due','expire_year','expire_date','doc_no','status','note'];
+  const filled = keys.filter(k => d[k] !== '' && d[k] != null).length;
+  return {filled, total: keys.length};
+}
+
+function renderRegister(){
+  renderRegCatFilter();
+  let rows = [...REGISTER_DATA];
+  const q = document.getElementById('regSearch').value.trim().toLowerCase();
+  const cat = regCatFilter.value;
+  if(q) rows = rows.filter(d => (d.name||'').toLowerCase().includes(q) || (d.vendor||'').toLowerCase().includes(q) || (d.responsible||'').toLowerCase().includes(q));
+  if(cat) rows = rows.filter(d => d.category===cat);
+
+  rows = rows.sort((a,b)=>{
+    let av = a[regSortKey], bv = b[regSortKey];
+    if(typeof av === 'string' || typeof bv === 'string' || av==null || bv==null){
+      av = (av==null?'':av).toString(); bv = (bv==null?'':bv).toString();
+      return regSortAsc ? av.localeCompare(bv,'th') : bv.localeCompare(av,'th');
+    }
+    return regSortAsc ? av-bv : bv-av;
+  });
+
+  document.getElementById('regCountPill').textContent = rows.length + ' รายการ';
+  document.getElementById('regNote').textContent = 'ข้อมูลสัญญา/ผู้ขาย/วันหมดอายุ — คลิกหัวตารางเพื่อจัดเรียง คลิก "แก้ไข" เพื่อเติมข้อมูลที่ยังขาด';
+
+  const body = document.getElementById('registerBody');
+  if(rows.length===0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="19">ไม่พบรายการที่ตรงกับเงื่อนไข</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(d => {
+    const comp = fieldsCompleteness(d);
+    const incomplete = comp.filled < comp.total;
+    return `
+    <tr>
+      <td class="num">${d.no ?? '-'}</td>
+      <td>${d.category || '-'}</td>
+      <td>${d.budget_year || '-'}</td>
+      <td>${d.plan_code || '-'}</td>
+      <td class="name">${d.name || '-'} ${incomplete ? `<span class="badge soon" title="ข้อมูลกรอกแล้ว ${comp.filled}/${comp.total} ช่อง">ข้อมูลไม่ครบ</span>` : ''}</td>
+      <td>${d.unit || '-'}</td>
+      <td class="num">${d.qty ?? '-'}</td>
+      <td class="num">${d.unit_price!=null ? fmt2(d.unit_price) : '-'}</td>
+      <td class="num">${d.total!=null ? fmt2(d.total) : '-'}</td>
+      <td>${d.vendor || '-'}</td>
+      <td>${d.responsible || '-'}</td>
+      <td>${d.renew_period || '-'}</td>
+      <td>${d.delivery_due || '-'}</td>
+      <td>${d.expire_year || '-'}</td>
+      <td>${d.expire_date || '-'}</td>
+      <td>${d.doc_no || '-'}</td>
+      <td>${d.status || '-'}</td>
+      <td>${d.note || '-'}</td>
+      <td>
+        <button type="button" class="del-btn" data-editid="${d.id}" style="background:var(--primary-tint);color:var(--primary-dark);">แก้ไข</button>
+        ${d._row ? `<button type="button" class="del-btn" data-delrow="${d._row}" data-delid="${d.id}">ลบ</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+
+  body.querySelectorAll('[data-editid]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.getElementById('r-select').value = btn.dataset.editid;
+      document.getElementById('r-select').dispatchEvent(new Event('change'));
+      showRegForm();
+      document.getElementById('r-name').focus();
+    });
+  });
+
+  body.querySelectorAll('[data-delrow]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('ยืนยันลบรายการนี้ออกจาก Google Sheet ถาวรหรือไม่?')) return;
+      btn.disabled = true; btn.textContent = '...';
+      const rowNum = Number(btn.dataset.delrow);
+      const ok = await deleteSheetRow('ทะเบียนจัดซื้อจัดจ้าง', rowNum);
+      if(ok){
+        await connectGoogleSheet();
+      }else{
+        alert('ลบไม่สำเร็จ กรุณาลองใหม่ หรือเช็คการเชื่อมต่อ');
+        btn.disabled = false; btn.textContent = 'ลบ';
+      }
+    });
+  });
+}
+
+document.querySelectorAll('#view-register thead th[data-rkey]').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.rkey;
+    if(regSortKey===key) regSortAsc = !regSortAsc; else { regSortKey = key; regSortAsc = false; }
+    document.querySelectorAll('#view-register thead th').forEach(t=>t.classList.remove('sorted','asc'));
+    th.classList.add('sorted'); if(regSortAsc) th.classList.add('asc');
+    renderRegister();
+  });
+});
+document.getElementById('regSearch').addEventListener('input', renderRegister);
+regCatFilter.addEventListener('change', renderRegister);
+
+// ---------- register add/edit form ----------
+function populateRegSelect(){
+  const sel = document.getElementById('r-select');
+  const cur = sel.value;
+  const cats = [...new Set(REGISTER_DATA.map(d=>d.category))].filter(Boolean).sort();
+  document.getElementById('regCatList').innerHTML = cats.map(c=>`<option value="${c}"></option>`).join('');
+  const opts = ['<option value="">-- เพิ่มรายการใหม่ --</option>']
+    .concat(REGISTER_DATA.map(d => `<option value="${d.id}">${(d.name||'(ไม่มีชื่อ)').slice(0,60)}</option>`));
+  sel.innerHTML = opts.join('');
+  if([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+}
+
+function populateVendorOptions(){
+  const sel = document.getElementById('r-vendor');
+  if(!sel) return;
+  const cur = sel.value;
+  const names = [...new Set(vendors.map(v=>v.company).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
+  sel.innerHTML = '<option value="">-- เลือกผู้ขาย --</option>' + names.map(n=>`<option value="${n}">${n}</option>`).join('');
+  if(names.includes(cur)) sel.value = cur;
+}
+
+function fillRegForm(d){
+  populateVendorOptions();
+  document.getElementById('r-category').value = d?.category || '';
+  document.getElementById('r-budget-year').value = d?.budget_year || '';
+  document.getElementById('r-budget-code').value = d?.plan_code || '';
+  document.getElementById('r-name').value = d?.name || '';
+  document.getElementById('r-unit').value = d?.unit || '';
+  document.getElementById('r-qty').value = d?.qty ?? '';
+  document.getElementById('r-unit-price').value = d?.unit_price ?? '';
+  document.getElementById('r-vendor').value = d?.vendor || '';
+  document.getElementById('r-responsible').value = d?.responsible || '';
+  document.getElementById('r-renew').value = d?.renew_period || '';
+  document.getElementById('r-delivery').value = d?.delivery_due || '';
+  document.getElementById('r-expire-year').value = d?.expire_year || '';
+  document.getElementById('r-expire-date').value = d?.expire_date || '';
+  document.getElementById('r-doc').value = d?.doc_no || '';
+  document.getElementById('r-status').value = d?.status || '';
+  document.getElementById('r-note').value = d?.note || '';
+}
+
+document.getElementById('r-select').addEventListener('change', (e)=>{
+  const id = e.target.value;
+  if(!id){ fillRegForm(null); return; }
+  const rec = REGISTER_DATA.find(d=>d.id===id);
+  fillRegForm(rec);
+});
+
+document.getElementById('regForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const status = document.getElementById('regFormStatus');
+  const submitBtn = document.getElementById('regSubmitBtn');
+  const selId = document.getElementById('r-select').value;
+
+  const fields = {
+    category: document.getElementById('r-category').value.trim(),
+    budget_year: document.getElementById('r-budget-year').value ? Number(document.getElementById('r-budget-year').value) : null,
+    plan_code: document.getElementById('r-budget-code').value.trim(),
+    name: document.getElementById('r-name').value.trim(),
+    unit: document.getElementById('r-unit').value.trim(),
+    qty: document.getElementById('r-qty').value ? Number(document.getElementById('r-qty').value) : null,
+    unit_price: document.getElementById('r-unit-price').value ? Number(document.getElementById('r-unit-price').value) : null,
+    vendor: document.getElementById('r-vendor').value.trim(),
+    responsible: document.getElementById('r-responsible').value.trim(),
+    renew_period: document.getElementById('r-renew').value.trim(),
+    delivery_due: document.getElementById('r-delivery').value.trim(),
+    expire_year: document.getElementById('r-expire-year').value.trim(),
+    expire_date: document.getElementById('r-expire-date').value.trim(),
+    doc_no: document.getElementById('r-doc').value.trim(),
+    status: document.getElementById('r-status').value.trim(),
+    note: document.getElementById('r-note').value.trim(),
+  };
+  if(fields.qty!=null && fields.unit_price!=null) fields.total = fields.qty * fields.unit_price;
+
+  if(!fields.name){
+    status.textContent = 'กรุณากรอกชื่อรายการ';
+    status.className = 'form-status err';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  status.textContent = 'กำลังบันทึก...';
+  status.className = 'form-status';
+
+  let ok;
+  if(selId){
+    registerOverrides[selId] = {...(registerOverrides[selId]||{}), ...fields};
+    ok = await saveRegisterOverrides();
+    if(!ok){
+      delete registerOverrides[selId];
+    }else{
+      const rec = REGISTER_DATA.find(d=>d.id===selId);
+      if(rec && rec._row){
+        const merged = {...rec, ...fields};
+        updateSheetRow('ทะเบียนจัดซื้อจัดจ้าง', rec._row, [
+          merged.no, merged.category, merged.name, merged.unit, merged.qty, merged.unit_price, merged.total,
+          merged.renew_period, merged.delivery_due, merged.expire_year, merged.expire_date,
+          merged.vendor, merged.responsible, merged.doc_no, merged.status, merged.note
+        ]);
+      }
+    }
+  }else{
+    const newRec = {id:'u'+Date.now()+Math.floor(Math.random()*1000), no:null, ...fields, source:'user'};
+    addedRegister.push(newRec);
+    ok = await saveAddedRegister();
+    if(!ok){
+      addedRegister.pop();
+    }else{
+      // also add to budget plan (รายการงบประมาณ) automatically
+      const budgetRecord = {
+        id: 'u' + Date.now() + Math.floor(Math.random()*1000) + 'b',
+        year: fields.budget_year || new Date().getFullYear() + 543,
+        category: fields.category || 'ไม่ระบุหมวดหมู่',
+        name: fields.name + (fields.plan_code ? ` (รหัสงบประมาณ ${fields.plan_code})` : ''),
+        unit: fields.unit,
+        unit_price: fields.unit_price,
+        qty: fields.qty,
+        budget: fields.total || 0,
+        actual_qty: null,
+        actual_value: 0,
+        vendor: fields.vendor,
+      };
+      userRecords.push(budgetRecord);
+      const okBudget = await saveUserRecords();
+      if(!okBudget) userRecords.pop();
+      else{
+        appendSheetRow('รายการงบประมาณ', [budgetRecord.year, budgetRecord.category, budgetRecord.name, budgetRecord.unit, budgetRecord.unit_price, budgetRecord.qty, budgetRecord.budget, null, budgetRecord.actual_value, budgetRecord.vendor, fields.plan_code]);
+      }
+      appendSheetRow('ทะเบียนจัดซื้อจัดจ้าง', [null, fields.category, fields.name, fields.unit, fields.qty, fields.unit_price, fields.total, fields.renew_period, fields.delivery_due, fields.expire_year, fields.expire_date, fields.vendor, fields.responsible, fields.doc_no, fields.status, fields.note]);
+    }
+  }
+
+  if(ok){
+    status.textContent = 'บันทึกข้อมูลเรียบร้อย — เพิ่มเข้ารายการงบประมาณให้ด้วยแล้ว';
+    status.className = 'form-status ok';
+    rebuildRegister();
+    rebuildData();
+    populateRegSelect();
+    renderRegister();
+    renderExpiring();
+    renderAll();
+  }else{
+    status.textContent = 'บันทึกไม่สำเร็จ กรุณาลองใหม่';
+    status.className = 'form-status err';
+  }
+  submitBtn.disabled = false;
+});
+
+function renderAll(){
+  renderTabs();
+  renderCards();
+  renderGauges();
+  renderCatFilter();
+  renderTable();
+  renderExpiring();
+}
+
+// ---------- vendor registry ----------
+let vendors = [];
+const VENDOR_KEY = 'procurement_dashboard_vendors';
+let vendorSortKey = 'company';
+let vendorSortAsc = true;
+
+async function loadVendors(){
+  try{
+    const raw = localStorage.getItem(VENDOR_KEY);
+    vendors = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    vendors = [];
+  }
+  if(document.querySelector('.menu-item.active')?.dataset.view === 'vendors') renderVendors();
+}
+
+async function saveVendors(){
+  try{
+    localStorage.setItem(VENDOR_KEY, JSON.stringify(vendors));
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+function populateVendorSelect(){
+  const sel = document.getElementById('v-select');
+  const cur = sel.value;
+  const order = [...vendors].map((d,i)=>i).reverse();
+  const opts = ['<option value="">-- เพิ่มผู้ขายใหม่ --</option>']
+    .concat(order.map(i => `<option value="${vendors[i].id}">${(vendors[i].company||'(ไม่มีชื่อ)').slice(0,60)}</option>`));
+  sel.innerHTML = opts.join('');
+  if([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+}
+
+function fillVendorForm(d){
+  document.getElementById('v-company').value = d?.company || '';
+  document.getElementById('v-address').value = d?.address || '';
+  document.getElementById('v-contact-name').value = d?.contact_name || '';
+  document.getElementById('v-phone').value = d?.phone || '';
+  document.getElementById('v-note').value = d?.note || '';
+}
+
+document.getElementById('v-select').addEventListener('change', (e)=>{
+  const id = e.target.value;
+  if(!id){ fillVendorForm(null); return; }
+  const rec = vendors.find(d=>d.id===id);
+  fillVendorForm(rec);
+});
+
+function renderVendors(){
+  populateVendorSelect();
+  let rows = [...vendors];
+  const q = document.getElementById('vendorSearch').value.trim().toLowerCase();
+  if(q) rows = rows.filter(d => (d.company||'').toLowerCase().includes(q) || (d.contact_name||'').toLowerCase().includes(q));
+
+  rows = rows.sort((a,b)=>{
+    let av = (a[vendorSortKey]||'').toString(), bv = (b[vendorSortKey]||'').toString();
+    return vendorSortAsc ? av.localeCompare(bv,'th') : bv.localeCompare(av,'th');
+  });
+
+  document.getElementById('vendorCountPill').textContent = rows.length + ' ราย';
+  document.getElementById('vendorNote').textContent = 'คลิกหัวตารางเพื่อจัดเรียง — คลิก "แก้ไข" เพื่อแก้ข้อมูลผู้ขาย';
+
+  const body = document.getElementById('vendorBody');
+  if(rows.length===0){
+    body.innerHTML = '<tr class="empty-row"><td colspan="6">ยังไม่มีข้อมูลผู้ขาย — กด "+ เพิ่มผู้ขายใหม่" เพื่อเริ่มบันทึก</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(d => `
+    <tr>
+      <td class="name">${d.company || '-'}</td>
+      <td>${d.address || '-'}</td>
+      <td>${d.contact_name || '-'}</td>
+      <td>${d.phone || '-'}</td>
+      <td>${d.note || '-'}</td>
+      <td>
+        <button type="button" class="del-btn" data-vedit="${d.id}" style="background:var(--primary-tint);color:var(--primary-dark);">แก้ไข</button>
+        <button type="button" class="del-btn" data-vdel="${d.id}">ลบ</button>
+      </td>
+    </tr>
+  `).join('');
+
+  body.querySelectorAll('[data-vedit]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.getElementById('v-select').value = btn.dataset.vedit;
+      document.getElementById('v-select').dispatchEvent(new Event('change'));
+      showVendorForm();
+      document.getElementById('v-company').focus();
+    });
+  });
+  body.querySelectorAll('[data-vdel]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('ยืนยันลบผู้ขายรายนี้หรือไม่?')) return;
+      const id = btn.dataset.vdel;
+      btn.disabled = true; btn.textContent = '...';
+      const idx = vendors.findIndex(d=>d.id===id);
+      const rec = idx>-1 ? vendors[idx] : null;
+      if(idx>-1) vendors.splice(idx,1);
+      const ok = await saveVendors();
+      if(!ok){
+        alert('ลบไม่สำเร็จ กรุณาลองใหม่');
+      }else if(rec && rec._row){
+        const deleted = await deleteSheetRow('ทะเบียนผู้ขาย', rec._row);
+        if(deleted){ await connectGoogleSheet(); return; }
+      }
+      renderVendors();
+    });
+  });
+}
+
+document.querySelectorAll('#view-vendors thead th[data-vkey]').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.vkey;
+    if(vendorSortKey===key) vendorSortAsc = !vendorSortAsc; else { vendorSortKey = key; vendorSortAsc = true; }
+    document.querySelectorAll('#view-vendors thead th').forEach(t=>t.classList.remove('sorted','asc'));
+    th.classList.add('sorted'); if(vendorSortAsc) th.classList.add('asc');
+    renderVendors();
+  });
+});
+document.getElementById('vendorSearch').addEventListener('input', renderVendors);
+document.getElementById('retrySyncBtn').addEventListener('click', ()=> connectGoogleSheet());
+
+document.getElementById('vendorForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const status = document.getElementById('vendorFormStatus');
+  const submitBtn = document.getElementById('vendorSubmitBtn');
+  const selId = document.getElementById('v-select').value;
+
+  const fields = {
+    company: document.getElementById('v-company').value.trim(),
+    address: document.getElementById('v-address').value.trim(),
+    contact_name: document.getElementById('v-contact-name').value.trim(),
+    phone: document.getElementById('v-phone').value.trim(),
+    note: document.getElementById('v-note').value.trim(),
+  };
+
+  if(!fields.company){
+    status.textContent = 'กรุณากรอกชื่อบริษัท/ร้านค้า';
+    status.className = 'form-status err';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  status.textContent = 'กำลังบันทึก...';
+  status.className = 'form-status';
+
+  let ok;
+  if(selId){
+    const idx = vendors.findIndex(d=>d.id===selId);
+    if(idx>-1){
+      vendors[idx] = {...vendors[idx], ...fields};
+      ok = await saveVendors();
+      if(ok && vendors[idx]._row){
+        updateSheetRow('ทะเบียนผู้ขาย', vendors[idx]._row, [fields.company, fields.address, fields.contact_name, fields.phone, fields.note]);
+      }
+    }else{
+      ok = false;
+    }
+  }else{
+    const newRec = {id:'v'+Date.now()+Math.floor(Math.random()*1000), ...fields};
+    vendors.push(newRec);
+    ok = await saveVendors();
+    if(!ok){
+      vendors.pop();
+    }else{
+      appendSheetRow('ทะเบียนผู้ขาย', [fields.company, fields.address, fields.contact_name, fields.phone, fields.note]);
+    }
+  }
+
+  if(ok){
+    status.textContent = 'บันทึกผู้ขายเรียบร้อย';
+    status.className = 'form-status ok';
+    document.getElementById('vendorForm').reset();
+    document.getElementById('v-select').value = '';
+    renderVendors();
+  }else{
+    status.textContent = 'บันทึกไม่สำเร็จ กรุณาลองใหม่';
+    status.className = 'form-status err';
+  }
+  submitBtn.disabled = false;
+});
+
+// ---------- theme switcher ----------
+const THEME_KEY = 'procurement_dashboard_theme';
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.themeBtn === theme);
+  });
+  try{ localStorage.setItem(THEME_KEY, theme); }catch(e){}
+}
+document.querySelectorAll('.theme-btn').forEach(b=>{
+  b.addEventListener('click', ()=> applyTheme(b.dataset.themeBtn));
+});
+let savedTheme = 'tech';
+try{ savedTheme = localStorage.getItem(THEME_KEY) || 'tech'; }catch(e){}
+applyTheme(savedTheme);
+
+// ---------- settings panel (org name + Apps Script URL) ----------
+const ORG_NAME_KEY = 'procurement_dashboard_org_name';
+const APPS_SCRIPT_URL_KEY = 'procurement_dashboard_apps_script_url';
+const DEFAULT_ORG_NAME = 'แผนกสารสนเทศ · โรงพยาบาลศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์';
+
+function applyOrgName(name){
+  const el = document.getElementById('orgEyebrow');
+  el.textContent = name && name.trim() ? name.trim() : DEFAULT_ORG_NAME;
+}
+
+function loadSettings(){
+  let orgName = '', appsScriptUrl = '';
+  try{ orgName = localStorage.getItem(ORG_NAME_KEY) || ''; }catch(e){}
+  try{ appsScriptUrl = localStorage.getItem(APPS_SCRIPT_URL_KEY) || ''; }catch(e){}
+  applyOrgName(orgName);
+  document.getElementById('s-org-name').value = orgName;
+  document.getElementById('s-apps-script-url').value = appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
+}
+
+const settingsOverlay = document.getElementById('settingsOverlay');
+document.getElementById('openSettingsBtn').addEventListener('click', ()=>{
+  settingsOverlay.classList.add('open');
+});
+document.getElementById('closeSettingsBtn').addEventListener('click', ()=>{
+  settingsOverlay.classList.remove('open');
+});
+settingsOverlay.addEventListener('click', (e)=>{
+  if(e.target === settingsOverlay) settingsOverlay.classList.remove('open');
+});
+
+document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
+  const status = document.getElementById('settingsStatus');
+  const orgName = document.getElementById('s-org-name').value.trim();
+  const appsScriptUrl = document.getElementById('s-apps-script-url').value.trim();
+
+  if(appsScriptUrl && !appsScriptUrl.endsWith('/exec')){
+    status.textContent = 'URL ควรลงท้ายด้วย /exec กรุณาตรวจสอบอีกครั้ง';
+    status.className = 'form-status err';
+    return;
+  }
+
+  try{
+    localStorage.setItem(ORG_NAME_KEY, orgName);
+    localStorage.setItem(APPS_SCRIPT_URL_KEY, appsScriptUrl);
+    applyOrgName(orgName);
+    status.textContent = 'บันทึกการตั้งค่าเรียบร้อย กำลังเชื่อมต่อ...';
+    status.className = 'form-status ok';
+    connectGoogleSheet();
+  }catch(e){
+    status.textContent = 'บันทึกไม่สำเร็จ กรุณาลองใหม่';
+    status.className = 'form-status err';
+  }
+});
+
+loadSettings();
+
+renderAll();
+loadUserRecords();
+loadRegisterStorage();
+loadVendors();
+connectGoogleSheet();
+</script>
+</body>
+</html>
