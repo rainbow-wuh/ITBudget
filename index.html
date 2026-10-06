@@ -784,33 +784,37 @@ async function fetchSheetRows(sheetName){
   return data.rows || [];
 }
 
-let lastSheetError = '';
-async function sheetWrite(params){
-  lastSheetError = '';
-  if(!getAppsScriptUrl()){ lastSheetError = 'ยังไม่ได้ตั้งค่า Apps Script URL (⚙️)'; return false; }
+async function appendSheetRow(sheetName, rowArray){
+  const url = getAppsScriptUrl();
+  if(!url) return false;
   try{
-    const data = await gsCall(params);
-    if(data && data.error){ lastSheetError = String(data.error); return false; }
-    if(data && (data.success || data.ok || data.status === 'ok')) return true;
-    lastSheetError = 'Apps Script ตอบกลับไม่ถูกต้อง: ' + JSON.stringify(data).slice(0,120) + ' (ต้องวางโค้ด v4 แล้ว Deploy เป็น New version)';
-    return false;
+    const data = await gsCall(`action=add&sheet=${encodeURIComponent(sheetName)}&row=${encodeURIComponent(JSON.stringify(rowArray))}`);
+    return !!data.success;
   }catch(e){
-    lastSheetError = e.message;
     return false;
   }
 }
-const failMsg = (what) => what + 'ไม่สำเร็จ' + (lastSheetError ? ' — ' + lastSheetError : ' กรุณาลองใหม่ หรือเช็คการเชื่อมต่อ');
 
-function appendSheetRow(sheetName, rowArray){
-  return sheetWrite(`action=add&sheet=${encodeURIComponent(sheetName)}&row=${encodeURIComponent(JSON.stringify(rowArray))}`);
+async function updateSheetRow(sheetName, rowNum, rowArray){
+  const url = getAppsScriptUrl();
+  if(!url || !rowNum) return false;
+  try{
+    const data = await gsCall(`action=update&sheet=${encodeURIComponent(sheetName)}&row_num=${rowNum}&row=${encodeURIComponent(JSON.stringify(rowArray))}`);
+    return !!data.success;
+  }catch(e){
+    return false;
+  }
 }
-function updateSheetRow(sheetName, rowNum, rowArray){
-  if(!rowNum){ lastSheetError = 'ไม่พบเลขแถวใน Sheet'; return Promise.resolve(false); }
-  return sheetWrite(`action=update&sheet=${encodeURIComponent(sheetName)}&row_num=${rowNum}&row=${encodeURIComponent(JSON.stringify(rowArray))}`);
-}
-function deleteSheetRow(sheetName, rowNum){
-  if(!rowNum){ lastSheetError = 'ไม่พบเลขแถวใน Sheet'; return Promise.resolve(false); }
-  return sheetWrite(`action=delete&sheet=${encodeURIComponent(sheetName)}&row_num=${rowNum}`);
+
+async function deleteSheetRow(sheetName, rowNum){
+  const url = getAppsScriptUrl();
+  if(!url || !rowNum) return false;
+  try{
+    const data = await gsCall(`action=delete&sheet=${encodeURIComponent(sheetName)}&row_num=${rowNum}`);
+    return !!data.success;
+  }catch(e){
+    return false;
+  }
 }
 
 function setSyncStatus(state, note){
@@ -1095,41 +1099,15 @@ document.getElementById('cancelVendorFormBtn').addEventListener('click', ()=>{
 
 // ---------- year tabs (apply to dashboard / budget-list / budget-cat) ----------
 const yearTabs = document.getElementById('yearTabs');
-const EXTRA_YEARS_KEY = 'procurement_dashboard_extra_years';
-let extraYears = [];
-try{ extraYears = JSON.parse(localStorage.getItem(EXTRA_YEARS_KEY) || '[]').filter(Number.isFinite); }catch(e){}
 function renderTabs(){
-  const years = [...new Set([...DATA.map(d=>d.year), ...extraYears])].filter(Boolean).sort((a,b)=>b-a);
+  const years = [...new Set(DATA.map(d=>d.year))].sort((a,b)=>b-a);
   const opts = [{v:'all', label:'ทุกปีงบประมาณ'}, ...years.map(y=>({v:y, label:'ปี '+y}))];
   yearTabs.innerHTML = opts.map(o =>
     `<div class="tab ${currentYear===o.v?'active':''}" data-y="${o.v}">${o.label}</div>`
-  ).join('') + '<div class="tab" id="addYearTab" title="เพิ่มปีงบประมาณใหม่">+ เพิ่มปีงบ</div>';
-  yearTabs.querySelectorAll('.tab[data-y]').forEach(t=>{
+  ).join('');
+  yearTabs.querySelectorAll('.tab').forEach(t=>{
     t.addEventListener('click', ()=>{ currentYear = t.dataset.y === 'all' ? 'all' : Number(t.dataset.y); renderAll(); });
   });
-  document.getElementById('addYearTab').addEventListener('click', addFiscalYear);
-}
-
-function addFiscalYear(){
-  const latest = Math.max(0, ...DATA.map(d=>d.year||0), ...extraYears);
-  const input = prompt('เพิ่มปีงบประมาณ (พ.ศ. 4 หลัก)', latest ? String(latest+1) : '');
-  if(input === null) return;
-  const y = Number(String(input).trim());
-  if(!Number.isInteger(y) || y < 2500 || y > 2700){
-    alert('กรุณาใส่ปี พ.ศ. 4 หลัก เช่น 2570');
-    return;
-  }
-  if(!extraYears.includes(y) && !DATA.some(d=>d.year===y)){
-    extraYears.push(y);
-    try{ localStorage.setItem(EXTRA_YEARS_KEY, JSON.stringify(extraYears)); }catch(e){}
-  }
-  currentYear = y;
-  renderAll();
-  // ไปหน้ารายการงบประมาณ เปิดฟอร์มพร้อมใส่ปีให้ — ปีจะถูกบันทึกลง Google Sheet เมื่อบันทึกรายการแรก
-  document.querySelector('.menu-item[data-view="budget-list"]').click();
-  document.getElementById('f-select').value = '';
-  fillBudgetForm({year:y});
-  showAddForm();
 }
 
 function currentRows(){
@@ -1442,7 +1420,7 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
         await connectGoogleSheet();
         hideAddForm();
       }else{
-        status.textContent = failMsg('แก้ไข');
+        status.textContent = 'แก้ไขไม่สำเร็จ กรุณาลองใหม่ หรือเช็คการเชื่อมต่อ';
         status.className = 'form-status err';
       }
     }else{
@@ -1458,7 +1436,7 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
       await connectGoogleSheet();
       hideAddForm();
     }else{
-      status.textContent = failMsg('บันทึก');
+      status.textContent = 'บันทึกไม่สำเร็จ กรุณาลองใหม่ หรือเช็คการเชื่อมต่อ';
       status.className = 'form-status err';
     }
   }
@@ -1656,37 +1634,65 @@ document.getElementById('regForm').addEventListener('submit', async (e)=>{
   status.textContent = 'กำลังบันทึก...';
   status.className = 'form-status';
 
-  let ok = false;
+  let ok;
   if(selId){
-    const rec = REGISTER_DATA.find(d=>d.id===selId);
-    if(rec && rec._row){
-      const m = {...rec, ...fields};
-      ok = await updateSheetRow('ทะเบียนจัดซื้อจัดจ้าง', rec._row, [
-        m.no, m.category, m.name, m.unit, m.qty, m.unit_price, m.total,
-        m.renew_period, m.delivery_due, m.expire_year, m.expire_date,
-        m.vendor, m.responsible, m.doc_no, m.status, m.note
-      ]);
+    registerOverrides[selId] = {...(registerOverrides[selId]||{}), ...fields};
+    ok = await saveRegisterOverrides();
+    if(!ok){
+      delete registerOverrides[selId];
     }else{
-      lastSheetError = 'ไม่พบรายการนี้ใน Google Sheet';
+      const rec = REGISTER_DATA.find(d=>d.id===selId);
+      if(rec && rec._row){
+        const merged = {...rec, ...fields};
+        updateSheetRow('ทะเบียนจัดซื้อจัดจ้าง', rec._row, [
+          merged.no, merged.category, merged.name, merged.unit, merged.qty, merged.unit_price, merged.total,
+          merged.renew_period, merged.delivery_due, merged.expire_year, merged.expire_date,
+          merged.vendor, merged.responsible, merged.doc_no, merged.status, merged.note
+        ]);
+      }
     }
   }else{
-    ok = await appendSheetRow('ทะเบียนจัดซื้อจัดจ้าง', [null, fields.category, fields.name, fields.unit, fields.qty, fields.unit_price, fields.total, fields.renew_period, fields.delivery_due, fields.expire_year, fields.expire_date, fields.vendor, fields.responsible, fields.doc_no, fields.status, fields.note]);
-    if(ok){
-      // เพิ่มเข้ารายการงบประมาณ (แผนจัดซื้อ) พร้อมรหัสงบประมาณด้วย
-      const by = fields.budget_year || (new Date().getFullYear() + 543);
-      const okB = await appendSheetRow('รายการงบประมาณ', [by, fields.category || 'ไม่ระบุหมวดหมู่', fields.name, fields.unit, fields.unit_price, fields.qty, fields.total || 0, null, 0, fields.vendor, fields.plan_code || '']);
-      if(!okB){ ok = false; lastSheetError = 'บันทึกทะเบียนแล้ว แต่เพิ่มเข้ารายการงบประมาณไม่สำเร็จ: ' + lastSheetError; }
+    const newRec = {id:'u'+Date.now()+Math.floor(Math.random()*1000), no:null, ...fields, source:'user'};
+    addedRegister.push(newRec);
+    ok = await saveAddedRegister();
+    if(!ok){
+      addedRegister.pop();
+    }else{
+      // also add to budget plan (รายการงบประมาณ) automatically
+      const budgetRecord = {
+        id: 'u' + Date.now() + Math.floor(Math.random()*1000) + 'b',
+        year: fields.budget_year || new Date().getFullYear() + 543,
+        category: fields.category || 'ไม่ระบุหมวดหมู่',
+        name: fields.name + (fields.plan_code ? ` (รหัสงบประมาณ ${fields.plan_code})` : ''),
+        unit: fields.unit,
+        unit_price: fields.unit_price,
+        qty: fields.qty,
+        budget: fields.total || 0,
+        actual_qty: null,
+        actual_value: 0,
+        vendor: fields.vendor,
+      };
+      userRecords.push(budgetRecord);
+      const okBudget = await saveUserRecords();
+      if(!okBudget) userRecords.pop();
+      else{
+        appendSheetRow('รายการงบประมาณ', [budgetRecord.year, budgetRecord.category, budgetRecord.name, budgetRecord.unit, budgetRecord.unit_price, budgetRecord.qty, budgetRecord.budget, null, budgetRecord.actual_value, budgetRecord.vendor, fields.plan_code]);
+      }
+      appendSheetRow('ทะเบียนจัดซื้อจัดจ้าง', [null, fields.category, fields.name, fields.unit, fields.qty, fields.unit_price, fields.total, fields.renew_period, fields.delivery_due, fields.expire_year, fields.expire_date, fields.vendor, fields.responsible, fields.doc_no, fields.status, fields.note]);
     }
   }
 
   if(ok){
-    status.textContent = 'บันทึกข้อมูลลง Google Sheet เรียบร้อย';
+    status.textContent = 'บันทึกข้อมูลเรียบร้อย — เพิ่มเข้ารายการงบประมาณให้ด้วยแล้ว';
     status.className = 'form-status ok';
-    await connectGoogleSheet();
+    rebuildRegister();
+    rebuildData();
+    populateRegSelect();
     renderRegister();
     renderExpiring();
+    renderAll();
   }else{
-    status.textContent = failMsg('บันทึก');
+    status.textContent = 'บันทึกไม่สำเร็จ กรุณาลองใหม่';
     status.className = 'form-status err';
   }
   submitBtn.disabled = false;
@@ -1848,25 +1854,37 @@ document.getElementById('vendorForm').addEventListener('submit', async (e)=>{
   status.textContent = 'กำลังบันทึก...';
   status.className = 'form-status';
 
-  let ok = false;
-  const vRow = [fields.company, fields.address, fields.contact_name, fields.phone, fields.note];
+  let ok;
   if(selId){
-    const cur = vendors.find(d=>d.id===selId);
-    if(cur && cur._row) ok = await updateSheetRow('ทะเบียนผู้ขาย', cur._row, vRow);
-    else lastSheetError = 'ไม่พบรายการนี้ใน Google Sheet';
+    const idx = vendors.findIndex(d=>d.id===selId);
+    if(idx>-1){
+      vendors[idx] = {...vendors[idx], ...fields};
+      ok = await saveVendors();
+      if(ok && vendors[idx]._row){
+        updateSheetRow('ทะเบียนผู้ขาย', vendors[idx]._row, [fields.company, fields.address, fields.contact_name, fields.phone, fields.note]);
+      }
+    }else{
+      ok = false;
+    }
   }else{
-    ok = await appendSheetRow('ทะเบียนผู้ขาย', vRow);
+    const newRec = {id:'v'+Date.now()+Math.floor(Math.random()*1000), ...fields};
+    vendors.push(newRec);
+    ok = await saveVendors();
+    if(!ok){
+      vendors.pop();
+    }else{
+      appendSheetRow('ทะเบียนผู้ขาย', [fields.company, fields.address, fields.contact_name, fields.phone, fields.note]);
+    }
   }
 
   if(ok){
-    status.textContent = 'บันทึกผู้ขายลง Google Sheet เรียบร้อย';
+    status.textContent = 'บันทึกผู้ขายเรียบร้อย';
     status.className = 'form-status ok';
     document.getElementById('vendorForm').reset();
     document.getElementById('v-select').value = '';
-    await connectGoogleSheet();
     renderVendors();
   }else{
-    status.textContent = failMsg('บันทึก');
+    status.textContent = 'บันทึกไม่สำเร็จ กรุณาลองใหม่';
     status.className = 'form-status err';
   }
   submitBtn.disabled = false;
