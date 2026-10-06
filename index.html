@@ -349,6 +349,8 @@
       <div class="sync-status-row">
         <div class="sync-status offline" id="syncStatus">⚪ ใช้ข้อมูลในไฟล์ (ยังไม่ได้เชื่อมต่อ Google Sheet)</div>
         <button type="button" class="sync-retry-btn" id="retrySyncBtn">🔄 ลองใหม่</button>
+        <button type="button" class="sync-retry-btn" id="diagBtn">🩺 ทดสอบการเชื่อมต่อ</button>
+        <pre id="diagOut" style="white-space:pre-wrap;font-size:12px;margin-top:8px;max-height:220px;overflow:auto;"></pre>
       </div>
       <div class="form-actions">
         <button type="button" class="btn-primary" id="saveSettingsBtn">บันทึกการตั้งค่า</button>
@@ -1793,6 +1795,27 @@ document.querySelectorAll('#view-vendors thead th[data-vkey]').forEach(th=>{
 });
 document.getElementById('vendorSearch').addEventListener('input', renderVendors);
 document.getElementById('retrySyncBtn').addEventListener('click', ()=> connectGoogleSheet());
+document.getElementById('diagBtn').addEventListener('click', async ()=>{
+  const out = document.getElementById('diagOut');
+  const url = getAppsScriptUrl();
+  out.textContent = 'หน้าเว็บ: ' + location.href + '\nURL ที่ใช้: ' + url + '\n\n';
+  const add = t => { out.textContent += t + '\n'; };
+  const tests = [
+    ['1) fetch รายการงบประมาณ', async()=>{ const r = await fetch(url+'?action=list&sheet='+encodeURIComponent('รายการงบประมาณ')); const t = await r.text(); return 'HTTP '+r.status+' ยาว '+t.length+' ตัวอักษร: '+t.slice(0,80); }],
+    ['2) JSONP รายการงบประมาณ', async()=>{ const d = await jsonpCall(url, 'action=list&sheet='+encodeURIComponent('รายการงบประมาณ')); return 'ได้ '+(d.rows?d.rows.length:0)+' แถว'+(d.error?' error='+d.error:''); }],
+  ];
+  for(const [name, fn] of tests){
+    const t0 = performance.now();
+    add(name + ' ...');
+    try{
+      const ctl = await Promise.race([fn(), new Promise((_,rej)=>setTimeout(()=>rej(new Error('เกิน 30 วินาที')),30000))]);
+      add('   ✅ ' + Math.round(performance.now()-t0) + ' ms — ' + ctl);
+    }catch(e){
+      add('   ❌ ' + Math.round(performance.now()-t0) + ' ms — ' + e.message);
+    }
+  }
+  add('\nคัดลอกข้อความนี้ส่งให้ผู้ช่วยได้เลย');
+});
 
 document.getElementById('vendorForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
