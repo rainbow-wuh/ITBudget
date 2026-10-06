@@ -727,7 +727,7 @@ let userRecords = [];
 
 // ---------- Google Sheet sync (via Apps Script web app) ----------
 const DEFAULT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby0ekHStak2nKfudBnMFlol60Ogu5jbXYcXggI-U7-H6-Tistxoa9ezwgm0MSPLRzg12Q/exec';
-const APPS_SCRIPT_URL_KEY_ = 'procurement_dashboard_apps_script_url';
+const APPS_SCRIPT_URL_KEY_ = 'procurement_dashboard_apps_script_url_v2';
 function getAppsScriptUrl(){
   try{
     const v = localStorage.getItem(APPS_SCRIPT_URL_KEY_);
@@ -1908,7 +1908,7 @@ applyTheme(savedTheme);
 
 // ---------- settings panel (org name + Apps Script URL) ----------
 const ORG_NAME_KEY = 'procurement_dashboard_org_name';
-const APPS_SCRIPT_URL_KEY = 'procurement_dashboard_apps_script_url';
+const APPS_SCRIPT_URL_KEY = 'procurement_dashboard_apps_script_url_v2';
 const DEFAULT_ORG_NAME = 'แผนกสารสนเทศ · โรงพยาบาลศูนย์การแพทย์ มหาวิทยาลัยวลัยลักษณ์';
 
 function applyOrgName(name){
