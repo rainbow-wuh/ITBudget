@@ -311,6 +311,8 @@
 
   .expiry-alert{margin:0 0 16px;padding:12px 16px;border-radius:12px;background:var(--coral);color:#fff;font-weight:600;cursor:pointer;line-height:1.5;}
   .expiry-alert small{display:block;font-weight:400;opacity:.92;}
+  .st-badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px;margin-right:6px;border:1px solid currentColor;}
+  .st-done{color:#1f9d55;} .st-skip{color:#8a8f98;} .st-wip{color:#c77d00;}
   .close-btn{font:inherit;font-size:12px;padding:3px 8px;margin:2px 4px 2px 0;border-radius:8px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer;}
   .close-btn:hover{background:rgba(127,127,127,.15);}
 </style>
@@ -385,7 +387,7 @@
     <section>
       <div class="section-head">
         <div class="section-title">สัญญา/รายการใกล้หมดอายุ</div>
-        <div class="section-note">น้อยกว่า 1 ปี — แจ้งเตือนต่อเนื่องจนกว่าจะกด "เสร็จแล้ว" หรือ "ไม่ต่ออายุ" (สีแดง = เหลือน้อยกว่า 3 เดือน)</div>
+        <div class="section-note">น้อยกว่า 1 ปี — รายการอยู่ในตารางจนถึงวันหมดอายุ (สีแดง = เหลือน้อยกว่า 3 เดือน) กดปุ่มเพื่อบันทึกผล ระบบจะหยุดแจ้งเตือนแต่ยังแสดงสถานะไว้</div>
       </div>
       <div class="table-wrap">
         <table>
@@ -400,7 +402,7 @@
     <section>
       <div class="section-head">
         <div class="section-title">สัญญา/รายการหมดอายุแล้ว</div>
-        <div class="section-note">ยังไม่ปิดงาน — แจ้งเตือนต่อเนื่องจนกว่าจะกด "เสร็จแล้ว" หรือ "ไม่ต่ออายุ"</div>
+        <div class="section-note">รายการที่ผ่านวันหมดอายุ — สีแดง = ยังไม่มีผลดำเนินการ (แจ้งเตือนต่อเนื่อง) / ป้ายสถานะ = มีผลดำเนินการแล้ว</div>
       </div>
       <div class="table-wrap">
         <table>
@@ -1214,13 +1216,22 @@ function parseThaiDate(s){
 function isClosedItem(r){
   return /เสร็จ|ไม่ต่อ|ยกเลิก|ปิดงาน/.test(r.status || '');
 }
-function closeBtns(id){
-  return `<button class="close-btn" data-close="${id}" data-st="ดำเนินการเสร็จแล้ว">✔ เสร็จแล้ว</button><button class="close-btn" data-close="${id}" data-st="ไม่ต่ออายุ">✖ ไม่ต่ออายุ</button>`;
+function statusCell(r){
+  const st = (r.status || '').trim();
+  if(isClosedItem(r)){
+    const skip = /ไม่ต่อ|ยกเลิก/.test(st);
+    return `<span class="st-badge ${skip?'st-skip':'st-done'}">${skip?'✖':'✔'} ${st}</span><button class="close-btn" data-close="${r.id}" data-st="" title="ล้างสถานะ กลับมาแจ้งเตือนอีกครั้ง">↩ ล้าง</button>`;
+  }
+  return (st ? `<span class="st-badge st-wip">${st}</span>` : '') +
+    `<button class="close-btn" data-close="${r.id}" data-st="ดำเนินการเสร็จแล้ว">✔ เสร็จแล้ว</button><button class="close-btn" data-close="${r.id}" data-st="ไม่ต่ออายุ">✖ ไม่ต่ออายุ</button>`;
 }
 async function closeRegisterItem(id, newStatus){
   const rec = REGISTER_DATA.find(d=>d.id===id);
   if(!rec || !rec._row){ alert('ไม่พบรายการนี้ใน Google Sheet'); return; }
-  if(!confirm('ปิดงาน "' + rec.name + '" เป็น "' + newStatus + '" ?\nจะหยุดแจ้งเตือนรายการนี้')) return;
+  const msg = newStatus
+    ? 'บันทึกสถานะ "' + newStatus + '" ให้ "' + rec.name + '" ?\nรายการจะยังแสดงในตาราง แต่หยุดแจ้งเตือน'
+    : 'ล้างสถานะของ "' + rec.name + '" ?\nจะกลับมาแจ้งเตือนอีกครั้ง';
+  if(!confirm(msg)) return;
   const m = {...rec, status:newStatus};
   const ok = await updateSheetRow('ทะเบียนจัดซื้อจัดจ้าง', rec._row, [
     m.no, m.category, m.name, m.unit, m.qty, m.unit_price, m.total,
@@ -1235,7 +1246,7 @@ function renderExpiring(){
   const today = new Date();
   const withDates = REGISTER_DATA
     .map(r => ({...r, _date: parseThaiDate(r.expire_date)}))
-    .filter(r => r._date && !isClosedItem(r));
+    .filter(r => r._date);
 
   const oneYearFromNow = new Date(today);
   oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
@@ -1254,27 +1265,27 @@ function renderExpiring(){
   }else{
     expiringBody.innerHTML = expiring.map(r=>{
       const days = Math.round((r._date - today)/(1000*60*60*24));
-      const urgent = days <= 90;
+      const urgent = days <= 90 && !isClosedItem(r);
       return `<tr${urgent ? ' style="color:var(--coral);"' : ''}>
         <td class="name">${r.name}</td>
         <td>${r.vendor || '-'}</td>
         <td>${r.responsible || '-'}</td>
         <td>${r.expire_date} <small>(อีก ${days} วัน)</small></td>
-        <td>${closeBtns(r.id)}</td>
+        <td>${statusCell(r)}</td>
       </tr>`;
     }).join('');
   }
 
   const expiredBody = document.getElementById('expiredBody');
   if(expired.length===0){
-    expiredBody.innerHTML = '<tr class="empty-row"><td colspan="5">ไม่มีรายการที่หมดอายุแล้ว (หรือปิดงานครบแล้ว)</td></tr>';
+    expiredBody.innerHTML = '<tr class="empty-row"><td colspan="5">ไม่มีรายการที่หมดอายุแล้ว</td></tr>';
   }else{
-    expiredBody.innerHTML = expired.map(r=>`<tr style="color:var(--coral);">
+    expiredBody.innerHTML = expired.map(r=>`<tr${isClosedItem(r) ? '' : ' style="color:var(--coral);"'}>
       <td class="name">${r.name}</td>
       <td>${r.vendor || '-'}</td>
       <td>${r.responsible || '-'}</td>
       <td>${r.expire_date}</td>
-      <td>${closeBtns(r.id)}</td>
+      <td>${statusCell(r)}</td>
     </tr>`).join('');
   }
 
@@ -1283,19 +1294,20 @@ function renderExpiring(){
   });
 
   // แจ้งเตือนด้านบน: เหลือ ≤ 90 วัน หรือหมดอายุแล้ว และยังไม่ปิดงาน
-  const urgentSoon = expiring.filter(r => Math.round((r._date - today)/(1000*60*60*24)) <= 90);
+  const openExpired = expired.filter(r => !isClosedItem(r));
+  const urgentSoon = expiring.filter(r => !isClosedItem(r) && Math.round((r._date - today)/(1000*60*60*24)) <= 90);
   const box = document.getElementById('expiryAlert');
   if(box){
-    if(urgentSoon.length + expired.length === 0){
+    if(urgentSoon.length + openExpired.length === 0){
       box.style.display = 'none';
     }else{
-      const names = [...expired, ...urgentSoon].slice(0,3).map(r=>r.name).join(', ');
+      const names = [...openExpired, ...urgentSoon].slice(0,3).map(r=>r.name).join(', ');
       box.style.display = 'block';
       box.innerHTML = '🔔 แจ้งเตือน: ' +
-        (expired.length ? `หมดอายุแล้ว ${expired.length} รายการ` : '') +
-        (expired.length && urgentSoon.length ? ' · ' : '') +
+        (openExpired.length ? `หมดอายุแล้ว ${openExpired.length} รายการ` : '') +
+        (openExpired.length && urgentSoon.length ? ' · ' : '') +
         (urgentSoon.length ? `ใกล้หมดอายุ (≤ 3 เดือน) ${urgentSoon.length} รายการ` : '') +
-        `<small>${names}${(expired.length+urgentSoon.length)>3?' …':''} — แจ้งต่อเนื่องจนกว่าจะกด "เสร็จแล้ว" หรือ "ไม่ต่ออายุ" · คลิกเพื่อดูรายการ</small>`;
+        `<small>${names}${(openExpired.length+urgentSoon.length)>3?' …':''} — แจ้งต่อเนื่องจนกว่าจะกด "เสร็จแล้ว" หรือ "ไม่ต่ออายุ" · คลิกเพื่อดูรายการ</small>`;
       box.onclick = ()=>{ document.querySelector('.menu-item[data-view="dashboard"]').click(); document.getElementById('expiringBody').scrollIntoView({behavior:'smooth'}); };
     }
   }
