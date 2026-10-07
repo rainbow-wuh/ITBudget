@@ -378,8 +378,8 @@
 
     <section>
       <div class="section-head">
-        <div class="section-title">งบประมาณตามหมวดหมู่ (สรุปย่อ)</div>
-        <div class="section-note">ดูรายละเอียดเพิ่มเติมได้ที่เมนู "งบประมาณแยกตามหมวด"</div>
+        <div class="section-title">งบประมาณตามหมวดหมู่</div>
+        <div class="section-note">แสดงครบทุกหมวดหมู่ของปีที่เลือก · ดูรายละเอียดเพิ่มเติมได้ที่เมนู "งบประมาณแยกตามหมวด"</div>
       </div>
       <div class="gauge-list" id="gaugeListMini"></div>
     </section>
@@ -1167,17 +1167,32 @@ function renderCards(){
 
 // ---------- gauges (shared builder) ----------
 function gaugesHtml(rows, actualByCat, limit){
+  const NOCAT = 'ไม่ระบุหมวดหมู่';
   const byCat = {};
   rows.forEach(d=>{
     const key = currentYear==='all' ? (d.year+' · '+d.category) : d.category;
-    if(!byCat[key]) byCat[key] = {budget:0, count:0, category:d.category};
+    if(!byCat[key]) byCat[key] = {budget:0, count:0, category:d.category, year:d.year};
     byCat[key].budget += d.budget||0;
     byCat[key].count += 1;
   });
+  // ยอดใช้จริงจากทะเบียน: โหมดทุกปีแยกตาม ปี·หมวด ให้ตรงกับแถวงบประมาณ (รายการไม่ระบุปีแยกเป็น "ไม่ระบุปี")
+  const actualMap = {};
+  if(currentYear==='all'){
+    REGISTER_DATA.forEach(r=>{
+      const cat = r.category || NOCAT;
+      const key = (r.budget_year || 'ไม่ระบุปี') + ' · ' + cat;
+      actualMap[key] = (actualMap[key]||0) + (r.total||0);
+      if(!byCat[key]) byCat[key] = {budget:0, count:0, category:cat};
+    });
+  }else{
+    Object.entries(actualByCat).forEach(([cat,val])=>{
+      actualMap[cat] = val;
+      if(!byCat[cat]) byCat[cat] = {budget:0, count:0, category:cat};
+    });
+  }
   let entries = Object.entries(byCat).map(([key,v])=>{
-    const actual = actualByCat[v.category] || 0;
-    return [key, {...v, actual}];
-  }).sort((a,b)=>b[1].budget-a[1].budget);
+    return [key, {...v, actual: actualMap[key] || 0}];
+  }).sort((a,b)=> (b[1].budget-a[1].budget) || (b[1].actual-a[1].actual));
   if(limit) entries = entries.slice(0, limit);
   return entries.map(([cat,v])=>{
     const pct = v.budget>0 ? Math.min(100,(v.actual/v.budget*100)) : 0;
@@ -1186,7 +1201,7 @@ function gaugesHtml(rows, actualByCat, limit){
     return `
     <div class="gauge-row">
       <div class="gauge-top">
-        <div class="gauge-cat">${cat} <span class="gauge-count">(${v.count} รายการ)</span></div>
+        <div class="gauge-cat">${cat} <span class="gauge-count">(${v.count ? v.count+" รายการ" : "ไม่มีงบตั้งไว้"})</span></div>
         <div class="gauge-figs"><b>${fmt(v.actual)}</b> / ${fmt(v.budget)} ฿</div>
       </div>
       <div class="vial">
@@ -1202,7 +1217,7 @@ function renderGauges(){
   const rows = currentRows();
   const actualByCat = registerActualByCategory(currentYear);
   document.getElementById('gaugeListFull').innerHTML = gaugesHtml(rows, actualByCat);
-  document.getElementById('gaugeListMini').innerHTML = gaugesHtml(rows, actualByCat, 3);
+  document.getElementById('gaugeListMini').innerHTML = gaugesHtml(rows, actualByCat);
 }
 
 // ---------- expiring contracts (dashboard) ----------
