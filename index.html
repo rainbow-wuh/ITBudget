@@ -567,7 +567,7 @@
     <section id="regFormSection" style="display:none;">
       <div class="section-head">
         <div class="section-title">บันทึก / แก้ไขทะเบียนจัดซื้อจัดจ้าง</div>
-        <div class="section-note">เลือกรายการเดิมเพื่อเติมข้อมูลที่ยังไม่ครบ หรือเพิ่มรายการใหม่ — รายการใหม่จะถูกเพิ่มเข้า "รายการงบประมาณ" ให้อัตโนมัติด้วย</div>
+        <div class="section-note">เลือกรายการเดิมเพื่อเติมข้อมูลที่ยังไม่ครบ หรือเพิ่มรายการใหม่ — ระบบตัดงบตามปีงบประมาณและหมวดหมู่ที่เลือก</div>
       </div>
       <div class="form-panel">
         <form id="regForm">
@@ -643,6 +643,8 @@
               <input type="text" id="r-note">
             </div>
           </div>
+          <div id="budgetCheck" class="hint" style="grid-column:1/-1;margin:8px 0;padding:10px 14px;border-radius:10px;background:rgba(127,127,127,.12);display:none;"></div>
+          <label style="display:flex;gap:8px;align-items:center;margin:6px 0 10px;font-size:14px;"><input type="checkbox" id="r-add-plan"> เพิ่มเป็นรายการในแผนงบประมาณ (รายการงบประมาณ) ด้วย — เลือกเฉพาะกรณีเป็นรายการใหม่ที่ยังไม่ได้ตั้งงบไว้</label>
           <div class="form-actions">
             <button type="submit" class="btn-primary" id="regSubmitBtn">บันทึกข้อมูล</button>
             <button type="button" class="btn-primary" id="cancelRegFormBtn" style="background:var(--ink-soft);">ยกเลิก</button>
@@ -877,7 +879,8 @@ function parseRegisterRowsFromSheet(rows){
       _row: 4 + idx, // actual row number in the sheet (1-based)
       no: r[0] ?? (idx+1),
       category: r[1] || '',
-      plan_code: '',
+      budget_year: (parseInt(r[16],10) > 2400) ? parseInt(r[16],10) : null,
+      plan_code: r[17] ? String(r[17]) : '',
       name: r[2] || '',
       unit: r[3] || '',
       qty: (typeof r[4]==='number') ? r[4] : null,
@@ -921,7 +924,7 @@ async function connectGoogleSheet(){
   setSyncStatus('connecting');
   try{
     const url = getAppsScriptUrl();
-    if(url){ gsCall('action=setup_budget_code').catch(()=>{}); } // เบื้องหลัง ไม่รอ
+    if(url){ gsCall('action=setup_budget_code').catch(()=>{}); gsCall('action=setup_register_cols').catch(()=>{}); } // เบื้องหลัง ไม่รอ
     const [budgetRows, registerRows, vendorRowsEarly] = await Promise.all([
       fetchSheetRows('รายการงบประมาณ'),
       fetchSheetRows('ทะเบียนจัดซื้อจัดจ้าง'),
@@ -1216,6 +1219,13 @@ function parseThaiDate(s){
 function isClosedItem(r){
   return /เสร็จ|ไม่ต่อ|ยกเลิก|ปิดงาน/.test(r.status || '');
 }
+function regRow(m){
+  // คอลัมน์ A-P เดิม + Q = ปีงบประมาณ, R = รหัสงบประมาณ
+  return [m.no ?? null, m.category, m.name, m.unit, m.qty, m.unit_price, m.total,
+    m.renew_period, m.delivery_due, m.expire_year, m.expire_date,
+    m.vendor, m.responsible, m.doc_no, m.status, m.note,
+    m.budget_year ?? '', m.plan_code ?? ''];
+}
 function statusCell(r){
   const st = (r.status || '').trim();
   if(isClosedItem(r)){
@@ -1233,11 +1243,7 @@ async function closeRegisterItem(id, newStatus){
     : 'ล้างสถานะของ "' + rec.name + '" ?\nจะกลับมาแจ้งเตือนอีกครั้ง';
   if(!confirm(msg)) return;
   const m = {...rec, status:newStatus};
-  const ok = await updateSheetRow('ทะเบียนจัดซื้อจัดจ้าง', rec._row, [
-    m.no, m.category, m.name, m.unit, m.qty, m.unit_price, m.total,
-    m.renew_period, m.delivery_due, m.expire_year, m.expire_date,
-    m.vendor, m.responsible, m.doc_no, m.status, m.note
-  ]);
+  const ok = await updateSheetRow('ทะเบียนจัดซื้อจัดจ้าง', rec._row, regRow(m));
   if(!ok){ alert('บันทึกไม่สำเร็จ' + (typeof lastSheetError !== 'undefined' && lastSheetError ? ' — ' + lastSheetError : '')); return; }
   await connectGoogleSheet();
   renderExpiring();
@@ -1520,7 +1526,7 @@ function fieldsCompleteness(d){
 
 function renderRegister(){
   renderRegCatFilter();
-  let rows = [...REGISTER_DATA];
+  let rows = currentYear==='all' ? [...REGISTER_DATA] : REGISTER_DATA.filter(d=>d.budget_year===currentYear);
   const q = document.getElementById('regSearch').value.trim().toLowerCase();
   const cat = regCatFilter.value;
   if(q) rows = rows.filter(d => (d.name||'').toLowerCase().includes(q) || (d.vendor||'').toLowerCase().includes(q) || (d.responsible||'').toLowerCase().includes(q));
@@ -1536,7 +1542,7 @@ function renderRegister(){
   });
 
   document.getElementById('regCountPill').textContent = rows.length + ' รายการ';
-  document.getElementById('regNote').textContent = 'ข้อมูลสัญญา/ผู้ขาย/วันหมดอายุ — คลิกหัวตารางเพื่อจัดเรียง คลิก "แก้ไข" เพื่อเติมข้อมูลที่ยังขาด';
+  document.getElementById('regNote').textContent = (currentYear==='all' ? 'แสดงทุกปีงบประมาณ (รวมรายการที่ยังไม่ระบุปี)' : 'แสดงปีงบประมาณ ' + currentYear + ' — เลือกปีที่แถบด้านบน') + ' · คลิกหัวตารางเพื่อจัดเรียง คลิก "แก้ไข" เพื่อเติมข้อมูลที่ยังขาด';
 
   const body = document.getElementById('registerBody');
   if(rows.length===0){
@@ -1649,6 +1655,8 @@ function fillRegForm(d){
   document.getElementById('r-doc').value = d?.doc_no || '';
   document.getElementById('r-status').value = d?.status || '';
   document.getElementById('r-note').value = d?.note || '';
+  document.getElementById('r-add-plan').checked = false;
+  if(typeof updateBudgetCheck === 'function') updateBudgetCheck();
 }
 
 document.getElementById('r-select').addEventListener('change', (e)=>{
@@ -1656,6 +1664,33 @@ document.getElementById('r-select').addEventListener('change', (e)=>{
   if(!id){ fillRegForm(null); return; }
   const rec = REGISTER_DATA.find(d=>d.id===id);
   fillRegForm(rec);
+});
+
+
+// ---------- ตัดงบประมาณตามปีงบประมาณ + หมวดหมู่ที่เลือก ----------
+function updateBudgetCheck(){
+  const box = document.getElementById('budgetCheck');
+  const year = Number(document.getElementById('r-budget-year').value) || null;
+  const cat = document.getElementById('r-category').value.trim();
+  if(!year || !cat){
+    box.style.display = 'block';
+    box.textContent = 'เลือกปีงบประมาณและหมวดหมู่ เพื่อดูยอดงบที่เหลือก่อนตัดงบ';
+    return;
+  }
+  const selId = document.getElementById('r-select').value;
+  const budget = DATA.filter(d=>d.year===year && d.category===cat).reduce((s,d)=>s+(d.budget||0),0);
+  const used = REGISTER_DATA.filter(r=>r.budget_year===year && r.category===cat && r.id!==selId).reduce((s,r)=>s+(r.total||0),0);
+  const q = parseFloat(document.getElementById('r-qty').value), up = parseFloat(document.getElementById('r-unit-price').value);
+  const thisAmt = (isFinite(q) && isFinite(up)) ? q*up : 0;
+  const after = budget - used - thisAmt;
+  box.style.display = 'block';
+  box.innerHTML = `ปี ${year} · หมวด "${cat}"<br>งบที่ตั้งไว้ <b>${fmt(budget)}</b> − ใช้ไปแล้ว <b>${fmt(used)}</b> − รายการนี้ <b>${fmt(thisAmt)}</b> = คงเหลือ <b style="color:${after<0?'var(--coral)':'inherit'}">${fmt(after)} ฿</b>` +
+    (budget===0 ? '<br>⚠ ไม่พบงบประมาณของปีและหมวดนี้ในรายการงบประมาณ' : (after<0 ? '<br>⚠ เกินงบประมาณที่ตั้งไว้' : ''));
+}
+['r-budget-year','r-category','r-qty','r-unit-price','r-select'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('input', updateBudgetCheck);
+  el.addEventListener('change', updateBudgetCheck);
 });
 
 document.getElementById('regForm').addEventListener('submit', async (e)=>{
@@ -1689,6 +1724,11 @@ document.getElementById('regForm').addEventListener('submit', async (e)=>{
     status.className = 'form-status err';
     return;
   }
+  if(!selId && (!fields.budget_year || !fields.category)){
+    status.textContent = 'กรุณาเลือกปีงบประมาณและหมวดหมู่ เพื่อตัดงบให้ถูกต้อง';
+    status.className = 'form-status err';
+    return;
+  }
 
   submitBtn.disabled = true;
   status.textContent = 'กำลังบันทึก...';
@@ -1699,17 +1739,13 @@ document.getElementById('regForm').addEventListener('submit', async (e)=>{
     const rec = REGISTER_DATA.find(d=>d.id===selId);
     if(rec && rec._row){
       const m = {...rec, ...fields};
-      ok = await updateSheetRow('ทะเบียนจัดซื้อจัดจ้าง', rec._row, [
-        m.no, m.category, m.name, m.unit, m.qty, m.unit_price, m.total,
-        m.renew_period, m.delivery_due, m.expire_year, m.expire_date,
-        m.vendor, m.responsible, m.doc_no, m.status, m.note
-      ]);
+      ok = await updateSheetRow('ทะเบียนจัดซื้อจัดจ้าง', rec._row, regRow(m));
     }else{
       lastSheetError = 'ไม่พบรายการนี้ใน Google Sheet';
     }
   }else{
-    ok = await appendSheetRow('ทะเบียนจัดซื้อจัดจ้าง', [null, fields.category, fields.name, fields.unit, fields.qty, fields.unit_price, fields.total, fields.renew_period, fields.delivery_due, fields.expire_year, fields.expire_date, fields.vendor, fields.responsible, fields.doc_no, fields.status, fields.note]);
-    if(ok){
+    ok = await appendSheetRow('ทะเบียนจัดซื้อจัดจ้าง', regRow({...fields, no:null}));
+    if(ok && document.getElementById('r-add-plan').checked){
       const by = fields.budget_year || (new Date().getFullYear() + 543);
       const okB = await appendSheetRow('รายการงบประมาณ', [by, fields.category || 'ไม่ระบุหมวดหมู่', fields.name, fields.unit, fields.unit_price, fields.qty, fields.total || 0, null, 0, fields.vendor, fields.plan_code || '']);
       if(!okB){ ok = false; lastSheetError = 'บันทึกทะเบียนแล้ว แต่เพิ่มเข้ารายการงบประมาณไม่สำเร็จ: ' + lastSheetError; }
@@ -1736,6 +1772,7 @@ function renderAll(){
   renderCatFilter();
   renderTable();
   renderExpiring();
+  if(document.querySelector('.menu-item.active')?.dataset.view === 'register') renderRegister();
 }
 
 // ---------- vendor registry ----------

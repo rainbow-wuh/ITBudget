@@ -38,6 +38,15 @@ function doGet(e){
       return out_({success:true});
     }
 
+    if(action === 'setup_register_cols'){
+      var rs = ss.getSheetByName('ทะเบียนจัดซื้อจัดจ้าง');
+      if(rs){
+        if(!rs.getRange(3,17).getValue()) rs.getRange(3,17).setValue('ปีงบประมาณ');
+        if(!rs.getRange(3,18).getValue()) rs.getRange(3,18).setValue('รหัสงบประมาณ');
+      }
+      return out_({success:true});
+    }
+
     if(action === 'setup_budget_code'){
       var bs = ss.getSheetByName('รายการงบประมาณ');
       if(bs && !bs.getRange(3,11).getValue()){
@@ -50,7 +59,7 @@ function doGet(e){
     if(!sh) return out_({error:'ไม่พบชีตชื่อ: ' + p.sheet});
 
     if(action === 'list'){
-      var lr = sh.getLastRow(), lc = Math.max(sh.getLastColumn(), 11);
+      var lr = sh.getLastRow(), lc = Math.max(sh.getLastColumn(), 18);
       var rows = lr ? sh.getRange(1,1,lr,lc).getValues().map(function(r){ return r.map(cell_); }) : [];
       return out_({rows:rows});
     }
