@@ -392,6 +392,7 @@
           <div class="field c2"><label for="pj-end">วันสิ้นสุดโครงการ <i>*</i></label><input type="date" id="pj-end"></div>
           <div class="field c2"><label for="pj-budget">งบประมาณที่ขอ <i>*</i></label><div class="pj-unit"><input type="number" min="0" step="0.01" id="pj-budget"><span>บาท</span></div></div>
           <div class="field c2"><label for="pj-status">สถานะ</label><select id="pj-status"></select></div>
+          <div class="field c2"><label for="pj-code">รหัสงบประมาณ</label><input type="text" id="pj-code" list="pjCodeList" placeholder="เช่น 69-06"><datalist id="pjCodeList"></datalist></div>
         </div>
         <div class="pj-sec">รายละเอียดโครงการ</div>
         <div class="pj-grid">
@@ -746,7 +747,7 @@
       </div>
       <div class="pj-chips" id="pjChips"></div>
       <div class="table-controls">
-        <input type="text" id="pjSearch" placeholder="ค้นหารหัส ชื่อโครงการ ผู้รับผิดชอบ">
+        <input type="text" id="pjSearch" placeholder="ค้นหารหัส รหัสงบประมาณ ชื่อโครงการ ผู้รับผิดชอบ">
         <select id="pjUnitFilter"></select>
         <select id="pjStratFilter"></select>
         <select id="pjSourceFilter"></select>
@@ -754,7 +755,7 @@
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>รหัส</th><th>ชื่อโครงการ</th><th>ผู้รับผิดชอบ</th><th>ยุทธศาสตร์</th><th>แหล่งงบ</th><th>ระยะเวลา</th><th style="text-align:right">งบที่ขอ (฿)</th><th>สถานะ</th><th></th>
+            <th>รหัส</th><th>รหัสงบ</th><th>ชื่อโครงการ</th><th>ผู้รับผิดชอบ</th><th>ยุทธศาสตร์</th><th>แหล่งงบ</th><th>ระยะเวลา</th><th style="text-align:right">งบที่ขอ (฿)</th><th>สถานะ</th><th></th>
           </tr></thead>
           <tbody id="pjBody"></tbody>
         </table>
@@ -1981,7 +1982,7 @@ function parseProjectRows(rows){
       start: r[9] || '', end: r[10] || '',
       budget: typeof r[11]==='number' ? r[11] : (parseFloat(r[11]) || 0),
       reason: r[12] || '', objective: r[13] || '', qty_goal: r[14] || '', qual_goal: r[15] || '', expect: r[16] || '',
-      kpis: Array.isArray(kpis) ? kpis : [], note: r[18] || '', status: r[19] || PJ_STATUSES[0],
+      kpis: Array.isArray(kpis) ? kpis : [], note: r[18] || '', status: r[19] || PJ_STATUSES[0], plan_code: r[20] ? String(r[20]) : '',
     });
   });
   return out;
@@ -1989,7 +1990,7 @@ function parseProjectRows(rows){
 function projectRow(p){
   return [p.code, p.name, p.year, p.unit, p.owner, p.co, p.place, p.strategy, p.source,
     p.start, p.end, p.budget, p.reason, p.objective, p.qty_goal, p.qual_goal, p.expect,
-    JSON.stringify(p.kpis || []), p.note, p.status];
+    JSON.stringify(p.kpis || []), p.note, p.status, p.plan_code || ''];
 }
 function thaiToIso(t){ // 01/10/2569 -> 2026-10-01
   const m = String(t||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -2032,17 +2033,18 @@ function renderProjects(){
   let rows = yearRows.filter(p=>
     (!pjStatusFilter || p.status===pjStatusFilter) &&
     (!uf.value || p.unit===uf.value) && (!sf.value || p.strategy===sf.value) && (!of.value || p.source===of.value) &&
-    (!q || [p.code,p.name,p.owner,p.co].some(x=>(x||'').toLowerCase().includes(q)))
+    (!q || [p.code,p.plan_code,p.name,p.owner,p.co].some(x=>(x||'').toLowerCase().includes(q)))
   ).sort((a,b)=> (b._row - a._row));   // ล่าสุดอยู่บน
 
   const body = document.getElementById('pjBody');
   if(rows.length===0){
-    body.innerHTML = `<tr class="empty-row"><td colspan="9"><div class="pj-empty"><b>ยังไม่มีโครงการ</b>กด "+ สร้างโครงการ" เพื่อเริ่มเสนอโครงการแรก${currentYear==='all'?'':'ของปีงบประมาณนี้'}</div></td></tr>`;
+    body.innerHTML = `<tr class="empty-row"><td colspan="10"><div class="pj-empty"><b>ยังไม่มีโครงการ</b>กด "+ สร้างโครงการ" เพื่อเริ่มเสนอโครงการแรก${currentYear==='all'?'':'ของปีงบประมาณนี้'}</div></td></tr>`;
   }else{
     body.innerHTML = rows.map(p=>{
       const si = Math.max(0, PJ_STATUSES.indexOf(p.status));
       return `<tr>
         <td class="num">${esc(p.code)||'-'}</td>
+        <td class="num">${esc(p.plan_code)||'-'}</td>
         <td class="name">${esc(p.name)}${p.kpis.length ? ` <span class="badge soon" title="ตัวชี้วัด">KPI ${p.kpis.length}</span>` : ''}</td>
         <td>${esc(p.owner)||'-'}</td>
         <td>${esc(p.strategy)||'-'}</td>
@@ -2095,6 +2097,7 @@ function openProjectForm(p){
   dl('pjOwnerList', [...new Set([...projects.map(x=>x.owner), ...REGISTER_DATA.map(r=>r.responsible)].filter(Boolean))]);
   dl('pjStratList', pjUniq('strategy'));
   dl('pjSourceList', pjUniq('source', PJ_SOURCES));
+  dl('pjCodeList', [...new Set([...DATA.map(d=>d.plan_code), ...REGISTER_DATA.map(r=>r.plan_code), ...projects.map(x=>x.plan_code)].filter(Boolean))].sort());
 
   const yDefault = p ? p.year : (typeof currentYear==='number' ? currentYear : fy);
   const set = (id,v)=> document.getElementById(id).value = v ?? '';
@@ -2105,7 +2108,7 @@ function openProjectForm(p){
   set('pj-end', p ? thaiToIso(p.end) : `${yDefault-543}-09-30`);
   set('pj-budget', p?.budget || ''); set('pj-status', p ? p.status : PJ_STATUSES[0]);
   set('pj-reason', p?.reason); set('pj-obj', p?.objective); set('pj-qty-goal', p?.qty_goal); set('pj-qual-goal', p?.qual_goal);
-  set('pj-expect', p?.expect); set('pj-note', p?.note);
+  set('pj-expect', p?.expect); set('pj-note', p?.note); set('pj-code', p?.plan_code);
   document.getElementById('pjKpiList').innerHTML = '';
   (p && p.kpis.length ? p.kpis : [{}]).forEach(pjKpiRow);
   document.getElementById('pjOverlay').classList.add('open');
@@ -2144,7 +2147,7 @@ document.getElementById('pjForm').addEventListener('submit', async (e)=>{
     place: v('pj-place'), strategy: v('pj-strat'), source: v('pj-source'),
     start: isoToThai(v('pj-start')), end: isoToThai(v('pj-end')), budget,
     reason: v('pj-reason'), objective: v('pj-obj'), qty_goal: v('pj-qty-goal'), qual_goal: v('pj-qual-goal'), expect: v('pj-expect'),
-    kpis, note: v('pj-note'), status: v('pj-status') || PJ_STATUSES[0],
+    kpis, note: v('pj-note'), status: v('pj-status') || PJ_STATUSES[0], plan_code: v('pj-code'),
   };
   btn.disabled = true; err.style.color = 'var(--ink-soft)'; err.textContent = 'กำลังบันทึกลง Google Sheet...';
   const ok = old ? await updateSheetRow(PJ_SHEET, old._row, projectRow(rec)) : await appendSheetRow(PJ_SHEET, projectRow(rec));
