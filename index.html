@@ -2010,12 +2010,16 @@ document.getElementById('regForm').addEventListener('submit', async (e)=>{
       lastSheetError = 'ไม่พบรายการนี้ใน Google Sheet';
     }
   }else{
-    ok = await appendSheetRow('ทะเบียนจัดซื้อจัดจ้าง', regRow({...fields, no:null}));
-    if(ok && document.getElementById('r-add-plan').checked){
-      const by = fields.budget_year || (new Date().getFullYear() + 543);
-      const okB = await appendSheetRow('รายการงบประมาณ', [by, fields.category || 'ไม่ระบุหมวดหมู่', fields.name, fields.unit, fields.unit_price, fields.qty, fields.total || 0, null, 0, fields.vendor, fields.plan_code || '']);
-      if(!okB){ ok = false; lastSheetError = 'บันทึกทะเบียนแล้ว แต่เพิ่มเข้ารายการงบประมาณไม่สำเร็จ: ' + lastSheetError; }
-    }
+    const wantPlan = document.getElementById('r-add-plan').checked;
+    const by = fields.budget_year || (new Date().getFullYear() + 543);
+    // เขียนทั้งสองชีตพร้อมกัน (เร็วกว่าทำทีละอัน)
+    const [okR, okB] = await Promise.all([
+      appendSheetRow('ทะเบียนจัดซื้อจัดจ้าง', regRow({...fields, no:null})),
+      wantPlan ? appendSheetRow('รายการงบประมาณ', [by, fields.category || 'ไม่ระบุหมวดหมู่', fields.name, fields.unit, fields.unit_price, fields.qty, fields.total || 0, null, 0, fields.vendor, fields.plan_code || '']) : Promise.resolve(true),
+    ]);
+    ok = okR && okB;
+    if(okR && !okB){ lastSheetError = 'บันทึกทะเบียนแล้ว แต่เพิ่มเข้ารายการงบประมาณไม่สำเร็จ'; }
+    else if(!okR && okB){ lastSheetError = 'เพิ่มเข้ารายการงบประมาณแล้ว แต่บันทึกทะเบียนไม่สำเร็จ'; }
   }
 
   if(ok){
@@ -2241,20 +2245,24 @@ document.getElementById('pjForm').addEventListener('submit', async (e)=>{
     kpis, note: v('pj-note'), status: v('pj-status') || PJ_STATUSES[0], plan_code: v('pj-code'),
   };
   window.__pjSaving = true;
-  btn.disabled = true; err.style.color = 'var(--ink-soft)'; err.textContent = 'กำลังบันทึกลง Google Sheet...';
-  let ok = false;
-  try{ ok = old ? await updateSheetRow(PJ_SHEET, old._row, projectRow(rec)) : await appendSheetRow(PJ_SHEET, projectRow(rec)); }
-  finally{ window.__pjSaving = false; }
-  btn.disabled = false; err.style.color = '';
-  if(!ok){ err.textContent = failMsg('บันทึก'); return; }
+  // แสดงผลทันที แล้วบันทึกลง Google Sheet เบื้องหลัง
+  const rowForWrite = old ? old._row : null;
   closeProjectForm();
   if(currentYear!=='all' && currentYear!==year) currentYear = year;   // ไปที่ปีของโครงการที่เพิ่งบันทึก จะได้เห็นทันที
-  // แสดงผลทันที (ก่อนโหลดจาก Sheet เสร็จ)
   if(old){ Object.assign(old, rec); }
   else{ const nr = projects.reduce((m,x)=>Math.max(m,x._row||1),1) + 1; projects.push({...rec, _row:nr, id:'p'+nr}); }
-  refreshAfterWrite();
   renderAll();
   renderProjects();
+  toast('⏳ กำลังบันทึกลง Google Sheet... (อย่าปิดหน้านี้)');
+  let ok = false;
+  try{ ok = old ? await updateSheetRow(PJ_SHEET, rowForWrite, projectRow(rec)) : await appendSheetRow(PJ_SHEET, projectRow(rec)); }
+  finally{ window.__pjSaving = false; }
+  if(!ok){
+    alert(failMsg('บันทึกโครงการ') + '\n\nรายการที่เห็นบนหน้าจอยังไม่ได้ถูกบันทึก — กำลังโหลดข้อมูลจริงจาก Sheet กลับมา');
+    connectGoogleSheet({skipCache:true});
+    return;
+  }
+  refreshAfterWrite();
 });
 
 async function deleteProject(id){
