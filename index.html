@@ -2033,7 +2033,7 @@ function fmtBaht(n){ return (n||0).toLocaleString('th-TH',{minimumFractionDigits
 function pjPeriod(p){ return (p.start && p.end) ? `${p.start} – ${p.end}` : '-'; }
 
 function renderProjects(){
-  const yearRows = currentYear==='all' ? projects : projects.filter(p=>p.year===currentYear);
+  const yearRows = currentYear==='all' ? projects : projects.filter(p=>p.year===currentYear || !p.year);
   document.getElementById('pjNote').textContent = currentYear==='all' ? 'ทุกปีงบประมาณ' : 'ปีงบประมาณ ' + currentYear;
 
   // status chips (count within selected year)
@@ -2055,7 +2055,9 @@ function renderProjects(){
 
   const body = document.getElementById('pjBody');
   if(rows.length===0){
-    body.innerHTML = `<tr class="empty-row"><td colspan="10"><div class="pj-empty"><b>ยังไม่มีโครงการ</b>กด "+ สร้างโครงการ" เพื่อเริ่มเสนอโครงการแรก${currentYear==='all'?'':'ของปีงบประมาณนี้'}</div></td></tr>`;
+    const others = currentYear==='all' ? 0 : projects.filter(p=>p.year && p.year!==currentYear).length;
+    const hint = others ? `<br><span style="color:var(--accent,#0a7)">มี ${others} โครงการในปีงบประมาณอื่น — กด "ทุกปีงบประมาณ" ด้านบนเพื่อดูทั้งหมด</span>` : '';
+    body.innerHTML = `<tr class="empty-row"><td colspan="10"><div class="pj-empty">${hint}<br><b>ยังไม่มีโครงการ</b>กด "+ สร้างโครงการ" เพื่อเริ่มเสนอโครงการแรก${currentYear==='all'?'':'ของปีงบประมาณนี้'}</div></td></tr>`;
   }else{
     body.innerHTML = rows.map(p=>{
       const si = Math.max(0, PJ_STATUSES.indexOf(p.status));
@@ -2175,7 +2177,9 @@ document.getElementById('pjForm').addEventListener('submit', async (e)=>{
   btn.disabled = false; err.style.color = '';
   if(!ok){ err.textContent = failMsg('บันทึก'); return; }
   closeProjectForm();
+  if(currentYear!=='all' && currentYear!==year) currentYear = year;   // ไปที่ปีของโครงการที่เพิ่งบันทึก จะได้เห็นทันที
   await connectGoogleSheet();
+  renderAll();
   renderProjects();
 });
 
