@@ -1057,37 +1057,74 @@ function parseVendorRowsFromSheet(rows){
   return out;
 }
 
+const CACHE_KEY = 'procurement_data_cache_v1';
+function saveCache(c){ try{ localStorage.setItem(CACHE_KEY, JSON.stringify({...c, ts:Date.now(), url:getAppsScriptUrl()})); }catch(e){} }
+function loadCache(){ try{ const c = JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); return (c && c.url===getAppsScriptUrl() && c.budget && c.register) ? c : null; }catch(e){ return null; } }
+function setupFlagKey(){ return 'procurement_setup_done_v11_' + getAppsScriptUrl(); }
+
+function applySheetData(budgetRows, registerRows, vendorRows, projectRows){
+  if(vendorRows) vendors = parseVendorRowsFromSheet(vendorRows);
+  if(projectRows){ projects = parseProjectRows(projectRows); projectsLoaded = true; }
+  const parsedBudget = parseBudgetRowsFromSheet(budgetRows);
+  const parsedRegister = parseRegisterRowsFromSheet(registerRows);
+  if(parsedBudget.length){
+    SEED_DATA = parsedBudget.map(d => ({...d, source:'seed', id:'s'+d._row}));
+  }
+  if(parsedRegister.length){
+    REGISTER_SEED = parsedRegister.map((d,i) => ({...d, id:'s'+(d.no ?? i), source:'seed'}));
+  }
+  rebuildData();
+  rebuildRegister();
+  renderAll();
+  populateRegSelect();
+  populateBudgetSelect();
+  if(document.querySelector('.menu-item.active')?.dataset.view === 'register') renderRegister();
+}
+
+let connectBusy = false, connectPending = false;
 async function connectGoogleSheet(){
+  if(connectBusy){ connectPending = true; return; }
+  connectBusy = true;
   setSyncStatus('connecting');
+  // แสดงข้อมูลที่เคยโหลดไว้ทันที (ระหว่างรออัปเดตจาก Google Sheet)
+  const cached = loadCache();
+  if(cached){
+    try{ applySheetData(cached.budget, cached.register, cached.vendors, cached.projects); }catch(e){}
+    setSyncStatus('connecting', 'กำลังอัปเดต — ระหว่างนี้แสดงข้อมูลที่บันทึกไว้เมื่อ ' + new Date(cached.ts).toLocaleString('th-TH'));
+  }
   try{
     const url = getAppsScriptUrl();
-    if(url){ gsCall('action=setup_budget_code').catch(()=>{}); gsCall('action=setup_register_cols').catch(()=>{}); gsCall('action=setup_projects').catch(()=>{}); } // เบื้องหลัง ไม่รอ
-    const [budgetRows, registerRows, vendorRowsEarly, projectRowsEarly] = await Promise.all([
-      fetchSheetRows('รายการงบประมาณ'),
-      fetchSheetRows('ทะเบียนจัดซื้อจัดจ้าง'),
-      fetchSheetRows('ทะเบียนผู้ขาย').catch(()=>null),
-      fetchSheetRows('โครงการ').catch(()=>null),
-    ]);
-    if(vendorRowsEarly) vendors = parseVendorRowsFromSheet(vendorRowsEarly);
-    if(projectRowsEarly){ projects = parseProjectRows(projectRowsEarly); projectsLoaded = true; }
-    const parsedBudget = parseBudgetRowsFromSheet(budgetRows);
-    const parsedRegister = parseRegisterRowsFromSheet(registerRows);
-    if(parsedBudget.length){
-      SEED_DATA = parsedBudget.map(d => ({...d, source:'seed', id:'s'+d._row}));
+    // ตั้งค่าหัวคอลัมน์: ทำครั้งเดียวต่อ URL (ไม่ทำทุกครั้งที่โหลด เพื่อให้เร็ว)
+    let needSetup = false;
+    try{ needSetup = !!url && !localStorage.getItem(setupFlagKey()); }catch(e){}
+    let all = null;
+    try{
+      all = await gsCall('action=list_all');
+      if(all && all.error) all = null;            // สคริปต์เก่า (ยังไม่มี list_all) -> ใช้วิธีเดิม
+    }catch(e){ all = null; if(!/ต้องการ Login/.test(e.message||'')) { /* ลองวิธีเดิมต่อ */ } else throw e; }
+    let budgetRows, registerRows, vendorRows, projectRows;
+    if(all && all.budget && all.register){
+      ({budget:budgetRows, register:registerRows, vendors:vendorRows, projects:projectRows} = all);
+    }else{
+      [budgetRows, registerRows, vendorRows, projectRows] = await Promise.all([
+        fetchSheetRows('รายการงบประมาณ'),
+        fetchSheetRows('ทะเบียนจัดซื้อจัดจ้าง'),
+        fetchSheetRows('ทะเบียนผู้ขาย').catch(()=>null),
+        fetchSheetRows('โครงการ').catch(()=>null),
+      ]);
     }
-    if(parsedRegister.length){
-      REGISTER_SEED = parsedRegister.map((d,i) => ({...d, id:'s'+(d.no ?? i), source:'seed'}));
-    }
-    rebuildData();
-    rebuildRegister();
+    applySheetData(budgetRows, registerRows, vendorRows, projectRows);
+    saveCache({budget:budgetRows, register:registerRows, vendors:vendorRows, projects:projectRows});
     setSyncStatus('connected');
-    renderAll();
-    populateRegSelect();
-    populateBudgetSelect();
-    if(document.querySelector('.menu-item.active')?.dataset.view === 'register') renderRegister();
+    if(needSetup){
+      Promise.all([gsCall('action=setup_budget_code'), gsCall('action=setup_register_cols'), gsCall('action=setup_projects')])
+        .then(()=>{ try{ localStorage.setItem(setupFlagKey(), '1'); }catch(e){} }).catch(()=>{});
+    }
   }catch(e){
-    setSyncStatus('error', e.message);
+    setSyncStatus('error', e.message + (cached ? ' (กำลังแสดงข้อมูลที่บันทึกไว้ล่าสุด)' : ''));
   }
+  connectBusy = false;
+  if(connectPending){ connectPending = false; return connectGoogleSheet(); }
   try{
     if(document.querySelector('.menu-item.active')?.dataset.view === 'vendors') renderVendors();
     if(typeof populateVendorOptions === 'function') populateVendorOptions();

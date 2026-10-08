@@ -98,6 +98,18 @@ function doGet(e){
       return out_({success:true});
     }
 
+    if(action === 'list_all'){
+      var names = {budget:'รายการงบประมาณ', register:'ทะเบียนจัดซื้อจัดจ้าง', vendors:'ทะเบียนผู้ขาย', projects:'โครงการ'};
+      var res = {};
+      Object.keys(names).forEach(function(k){
+        var s = ss.getSheetByName(names[k]);
+        if(!s){ res[k] = null; return; }
+        var lr2 = s.getLastRow(), lc2 = Math.max(s.getLastColumn(), 21);
+        res[k] = lr2 ? s.getRange(1,1,lr2,lc2).getValues().map(function(r){ return r.map(cell_); }) : [];
+      });
+      return out_(res);
+    }
+
     var sh = ss.getSheetByName(p.sheet);
     if(!sh) return out_({error:'ไม่พบชีตชื่อ: ' + p.sheet});
 
