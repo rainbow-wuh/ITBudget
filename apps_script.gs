@@ -39,6 +39,20 @@ function writeRow_(sh, rowNum, arr){
   sh.getRange(rowNum, 1, 1, clean.length).setValues([clean]);
 }
 
+// กันคำสั่งเพิ่ม/ลบซ้ำ: คำขอที่มี rid เดียวกัน (เช่น เว็บส่งซ้ำเมื่อเน็ตช้า) จะทำเพียงครั้งเดียว
+function dupRequest_(rid){
+  if(!rid) return false;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try{
+    var cache = CacheService.getScriptCache();
+    var key = 'rid_' + rid;
+    if(cache.get(key)) return true;
+    cache.put(key, '1', 21600);
+    return false;
+  }finally{ lock.releaseLock(); }
+}
+
 function doGet(e){
   try{
     var p = e.parameter || {};
@@ -96,6 +110,7 @@ function doGet(e){
     }
 
     if(action === 'add'){
+      if(dupRequest_(p.rid)) return out_({success:true, duplicate:true});
       var row = JSON.parse(p.row);
       writeRow_(sh, sh.getLastRow() + 1, row);
       return out_({success:true});
@@ -112,6 +127,7 @@ function doGet(e){
     if(action === 'delete'){
       var d = parseInt(p.row_num, 10);
       if(!d || d < 2) return out_({error:'row_num ไม่ถูกต้อง'});
+      if(dupRequest_(p.rid)) return out_({success:true, duplicate:true});
       sh.deleteRow(d);
       return out_({success:true});
     }

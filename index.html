@@ -916,6 +916,8 @@ async function fetchSheetRows(sheetName){
 }
 
 let lastSheetError = '';
+function newRid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,10); }
+
 async function sheetWrite(params){
   lastSheetError = '';
   if(!getAppsScriptUrl()){ lastSheetError = 'ยังไม่ได้ตั้งค่า Apps Script URL (⚙️)'; return false; }
@@ -932,7 +934,7 @@ async function sheetWrite(params){
 }
 const failMsg = (what) => what + 'ไม่สำเร็จ' + (lastSheetError ? ' — ' + lastSheetError : ' กรุณาลองใหม่ หรือเช็คการเชื่อมต่อ');
 function appendSheetRow(sheetName, rowArray){
-  return sheetWrite(`action=add&sheet=${encodeURIComponent(sheetName)}&row=${encodeURIComponent(JSON.stringify(rowArray))}`);
+  return sheetWrite(`action=add&rid=${newRid()}&sheet=${encodeURIComponent(sheetName)}&row=${encodeURIComponent(JSON.stringify(rowArray))}`);
 }
 function updateSheetRow(sheetName, rowNum, rowArray){
   if(!rowNum){ lastSheetError = 'ไม่พบเลขแถวใน Sheet'; return Promise.resolve(false); }
@@ -940,7 +942,7 @@ function updateSheetRow(sheetName, rowNum, rowArray){
 }
 function deleteSheetRow(sheetName, rowNum){
   if(!rowNum){ lastSheetError = 'ไม่พบเลขแถวใน Sheet'; return Promise.resolve(false); }
-  return sheetWrite(`action=delete&sheet=${encodeURIComponent(sheetName)}&row_num=${rowNum}`);
+  return sheetWrite(`action=delete&rid=${newRid()}&sheet=${encodeURIComponent(sheetName)}&row_num=${rowNum}`);
 }
 
 function setSyncStatus(state, note){
@@ -2144,6 +2146,7 @@ function nextProjectCode(year){
 
 document.getElementById('pjForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
+  if(window.__pjSaving) return;
   const v = id => document.getElementById(id).value.trim();
   const err = document.getElementById('pjErr'), btn = document.getElementById('pjSaveBtn');
   const year = parseInt(v('pj-year'),10);
@@ -2164,8 +2167,11 @@ document.getElementById('pjForm').addEventListener('submit', async (e)=>{
     reason: v('pj-reason'), objective: v('pj-obj'), qty_goal: v('pj-qty-goal'), qual_goal: v('pj-qual-goal'), expect: v('pj-expect'),
     kpis, note: v('pj-note'), status: v('pj-status') || PJ_STATUSES[0], plan_code: v('pj-code'),
   };
+  window.__pjSaving = true;
   btn.disabled = true; err.style.color = 'var(--ink-soft)'; err.textContent = 'กำลังบันทึกลง Google Sheet...';
-  const ok = old ? await updateSheetRow(PJ_SHEET, old._row, projectRow(rec)) : await appendSheetRow(PJ_SHEET, projectRow(rec));
+  let ok = false;
+  try{ ok = old ? await updateSheetRow(PJ_SHEET, old._row, projectRow(rec)) : await appendSheetRow(PJ_SHEET, projectRow(rec)); }
+  finally{ window.__pjSaving = false; }
   btn.disabled = false; err.style.color = '';
   if(!ok){ err.textContent = failMsg('บันทึก'); return; }
   closeProjectForm();
