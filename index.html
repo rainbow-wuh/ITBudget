@@ -2304,9 +2304,9 @@ function renderProjBudget(){
   if(!el) return;
   const NOCODE = '';
   const map = {};
-  const get = c => (map[c] = map[c] || {code:c, names:[], requested:0, budget:0, count:0, actual:0, bought:0, items:[]});
+  const get = c => (map[c] = map[c] || {code:c, names:[], requested:0, budget:0, count:0, actual:0, bought:0, items:[], plans:[]});
   const norm = c => String(c||'').normalize('NFKC').replace(/[\u2010-\u2015\u2212]/g,'-').replace(/\s+/g,'').toUpperCase();   // ไม่สนช่องว่าง/ตัวพิมพ์/ขีดต่างชนิด
-  currentRows().forEach(d=>{ const g=get(norm(d.plan_code)); g.budget += d.budget||0; g.count++; });
+  currentRows().forEach(d=>{ const g=get(norm(d.plan_code)); g.budget += d.budget||0; g.count++; g.plans.push(d); });
   REGISTER_DATA.forEach(r=>{
     if(currentYear!=='all' && r.budget_year!==currentYear) return;
     const g=get(norm(r.plan_code)); g.actual += r.total||0; g.bought++; g.items.push(r);
@@ -2328,8 +2328,10 @@ function renderProjBudget(){
     const title = g.code ? esc(g.code) : 'ไม่ระบุรหัสงบประมาณ';
     const pname = g.names.length ? g.names.map(esc).join(' · ') : (g.code ? (projectsLoaded ? '<span style="color:var(--warn,#c0392b)">ไม่พบโครงการที่ใช้รหัสนี้</span>' : '<span style="color:var(--ink-soft)">ยังโหลดรายการโครงการไม่ได้ (ตรวจสถานะการเชื่อมต่อมุมขวาบน)</span>') : '');
     const remain = g.budget - g.actual;
-    const detail = g.items.length ? `<details style="margin-top:8px;font-size:12.5px;"><summary style="cursor:pointer;color:var(--ink-soft)">รายการที่ซื้อแล้ว (${g.items.length})</summary>`+
+    const detail = g.items.length ? `<details style="margin-top:8px;font-size:12.5px;"><summary style="cursor:pointer;color:var(--ink-soft)">รายการที่ซื้อแล้ว (${g.items.length}) · รวม ${fmt(g.actual)} ฿</summary>`+
       g.items.map(r=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line,#8884)"><span>${esc(r.name)}</span><span style="white-space:nowrap">${fmt(r.total||0)} ฿</span></div>`).join('')+`</details>` : '';
+    const planDetail = g.plans.length ? `<details style="margin-top:8px;font-size:12.5px;"><summary style="cursor:pointer;color:var(--ink-soft)">รายการตามแผน (${g.plans.length}) · รวม ${fmt(g.budget)} ฿</summary>`+
+      g.plans.map(d=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line,#8884)"><span>${esc(d.name)}${currentYear==='all'&&d.year?` <span style="color:var(--ink-soft)">(${esc(d.year)})</span>`:''}${d.category?` <span style="color:var(--ink-soft)">· ${esc(d.category)}</span>`:''}</span><span style="white-space:nowrap">${fmt(d.budget||0)} ฿</span></div>`).join('')+`</details>` : '';
     return `
     <div class="gauge-row">
       <div class="gauge-top">
@@ -2341,6 +2343,7 @@ function renderProjBudget(){
         <div class="vial-ticks">${ticks}</div>
         <div class="vial-pct">${g.budget>0 ? pct.toFixed(0)+'%' : 'ไม่มีงบ'}</div>
       </div>
+      ${planDetail}
       ${detail}
     </div>`;
   }).join('') || '<div class="gauge-row" style="text-align:center;color:var(--ink-soft)">ไม่มีข้อมูล · กรอก "รหัสงบประมาณ" ในรายการงบประมาณ ทะเบียนจัดซื้อ และโครงการให้ตรงกัน</div>';
