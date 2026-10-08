@@ -370,6 +370,119 @@
     .pj-grid .c2,.pj-grid .c3{grid-column:span 6;}
     .pj-kpi{grid-template-columns:1fr 1fr 32px;} .pj-kpi input:first-child{grid-column:1/-1;}
   }
+
+  /* ===== ธีมนีออน (Dark: น้ำเงินเข้ม/ดำ + Electric Blue & Purple) ===== */
+  [data-theme="neon"]{
+    --bg:#070B1A;
+    --panel:#0E1530;
+    --ink:#E8EEFF;
+    --ink-soft:#8E9CC8;
+    --line:#222C55;
+    --primary:#22D3EE;
+    --primary-dark:#7C5CFF;
+    --primary-tint:#121B3F;
+    --amber:#FBBF24;
+    --amber-tint:#2A2310;
+    --green:#34D399;
+    --green-tint:#0F2A24;
+    --coral:#FF5C8A;
+    --coral-tint:#33142A;
+    --header-grad: linear-gradient(120deg,#050816 0%,#0B1240 45%,#2A0F5C 100%);
+    --menu-active-underline:#22D3EE;
+    --eyebrow-color:#22D3EE;
+    --sub-color:#A9B6E6;
+    --menu-text:#A9B6E6;
+    --header-text:#FFFFFF;
+    --header-shadow: 0 8px 30px rgba(34,211,238,.18), 0 2px 0 rgba(124,92,255,.5);
+    --card-radius:14px;
+    color-scheme: dark;
+  }
+  [data-theme="neon"] body{
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(124,92,255,.18), transparent 60%),
+      radial-gradient(800px 500px at 0% 30%, rgba(34,211,238,.10), transparent 60%),
+      var(--bg);
+    background-attachment:fixed;
+  }
+  [data-theme="neon"] header{position:relative; overflow:hidden;}
+  [data-theme="neon"] header::after{
+    content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+    background:linear-gradient(90deg,#22D3EE,#7C5CFF,#E040FB,#22D3EE);
+    box-shadow:0 0 14px rgba(34,211,238,.8), 0 0 28px rgba(124,92,255,.6);
+  }
+  [data-theme="neon"] h1{
+    background:linear-gradient(90deg,#FFFFFF 0%,#8BE9FF 45%,#B79CFF 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:none; filter:drop-shadow(0 0 14px rgba(34,211,238,.35));
+  }
+  [data-theme="neon"] .menu-item.active{text-shadow:0 0 12px rgba(34,211,238,.9);}
+  [data-theme="neon"] .menu-item.active{border-bottom-color:#22D3EE; box-shadow:0 2px 0 #22D3EE, 0 4px 14px rgba(34,211,238,.6);}
+  [data-theme="neon"] .theme-btn.active, [data-theme="neon"] .tab.active{
+    background:linear-gradient(90deg,#22D3EE,#7C5CFF); color:#050816; border-color:transparent; font-weight:700;
+    box-shadow:0 0 16px rgba(34,211,238,.45);
+  }
+  [data-theme="neon"] .card, [data-theme="neon"] .gauge-row{
+    background:linear-gradient(160deg,rgba(20,29,70,.92),rgba(11,16,40,.92));
+    border:1px solid transparent;
+    background-clip:padding-box;
+    position:relative;
+    box-shadow:0 0 0 1px rgba(76,96,190,.35), 0 10px 30px rgba(0,0,0,.35);
+  }
+  [data-theme="neon"] .card::before, [data-theme="neon"] .gauge-row::before{
+    content:""; position:absolute; inset:-1px; border-radius:inherit; padding:1px; pointer-events:none;
+    background:linear-gradient(135deg,rgba(34,211,238,.7),rgba(124,92,255,.15) 45%,rgba(224,64,251,.55));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor;
+    mask:linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+  [data-theme="neon"] .card .value{text-shadow:0 0 18px currentColor;}
+  [data-theme="neon"] .card.total .value{
+    background:linear-gradient(90deg,#FFFFFF,#8BE9FF); -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow:none;
+  }
+  [data-theme="neon"] .card.req .value{color:#4DA3FF; text-shadow:0 0 18px rgba(77,163,255,.7);}
+  [data-theme="neon"] .card.used .value{color:#FFB84D;}
+  [data-theme="neon"] .card.remain .value{color:#34F5B0;}
+  [data-theme="neon"] .card.rate .value{color:#B79CFF;}
+  [data-theme="neon"] .vial{background:#0A1030; border-color:#2A3570;}
+  [data-theme="neon"] .vial-fill{
+    background:linear-gradient(90deg,#22D3EE,#5B8CFF 55%,#B05CFF);
+    box-shadow:0 0 14px rgba(34,211,238,.7);
+  }
+  [data-theme="neon"] .vial-fill.over{background:linear-gradient(90deg,#FF5C8A,#FF2E63); box-shadow:0 0 14px rgba(255,92,138,.7);}
+  [data-theme="neon"] .vial-ticks span{border-right-color:rgba(142,156,200,.15);}
+  [data-theme="neon"] .vial-pct{color:#E8EEFF;}
+  [data-theme="neon"] .section-title{
+    background:linear-gradient(90deg,#E8EEFF,#9FB4FF); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  [data-theme="neon"] .table-controls input[type=text], [data-theme="neon"] .table-controls select,
+  [data-theme="neon"] input, [data-theme="neon"] select, [data-theme="neon"] textarea{
+    background:#0A1030; color:var(--ink); border-color:#2A3570;
+  }
+  [data-theme="neon"] input::placeholder, [data-theme="neon"] textarea::placeholder{color:#6674A6;}
+  [data-theme="neon"] thead th{background:#111A42; color:#9FB4FF; border-bottom-color:#2A3570;}
+  [data-theme="neon"] tbody td{border-bottom-color:#1A2350;}
+  [data-theme="neon"] tbody tr:hover{background:rgba(34,211,238,.06);}
+  [data-theme="neon"] .btn-primary{
+    background:linear-gradient(90deg,#22D3EE,#7C5CFF); color:#050816; font-weight:700;
+    box-shadow:0 0 18px rgba(124,92,255,.5);
+  }
+  [data-theme="neon"] .btn-primary:disabled{background:#2A3570; color:#8E9CC8; box-shadow:none;}
+  [data-theme="neon"] .pj-chip.active{background:linear-gradient(90deg,#22D3EE,#7C5CFF); border-color:transparent; color:#050816;}
+  [data-theme="neon"] .count-pill{background:#121B3F; color:#8BE9FF; border:1px solid #2A3570;}
+  [data-theme="neon"] .settings-panel, [data-theme="neon"] .modal, [data-theme="neon"] .pj-modal{
+    background:#0E1530; color:var(--ink); border:1px solid #2A3570; box-shadow:0 0 40px rgba(124,92,255,.35);
+  }
+  [data-theme="neon"] .sync-status{background:#0A1030;}
+  [data-theme="neon"] .expiry-alert{background:linear-gradient(90deg,#FF2E63,#B05CFF); box-shadow:0 0 22px rgba(255,46,99,.45);}
+  [data-theme="neon"] .badge.user{background:var(--amber-tint); color:#FBBF24;}
+  [data-theme="neon"] .conn-pill.connecting{background:#2A2310; color:#FBBF24; border-color:#7A5A12;}
+  [data-theme="neon"] .conn-pill.connected{background:#0F2A24; color:#34F5B0; border-color:#1F7A5C; box-shadow:0 0 12px rgba(52,245,176,.35);}
+  [data-theme="neon"] .conn-pill.error{background:#33142A; color:#FF8AAE; border-color:#8A2A55;}
+  [data-theme="neon"] .conn-pill.offline{background:#161D3E; color:#8E9CC8; border-color:#2A3570;}
+  [data-theme="neon"] #connBanner.err{background:#33142A; color:#FF9DBB; border-color:#8A2A55;}
+  [data-theme="neon"] #connBanner.warn{background:#2A2310; color:#FBBF24; border-color:#7A5A12;}
+  [data-theme="neon"] #connBanner.wait{background:#161D3E; color:#A9B6E6; border-color:#2A3570;}
+  [data-theme="neon"] .pj-st.s0{color:#8E9CC8;} [data-theme="neon"] .pj-st.s1{color:#4DA3FF;} [data-theme="neon"] .pj-st.s2{color:#FBBF24;} [data-theme="neon"] .pj-st.s3{color:#34F5B0;}
+  [data-theme="neon"] details summary{color:#9FB4FF !important;}
 </style>
 </head>
 <body>
@@ -377,6 +490,7 @@
 <header>
   <div class="theme-switch" id="themeSwitch">
     <span class="conn-pill offline" id="connPill" role="status" aria-live="polite" title="กดเพื่อเปิดตั้งค่าการเชื่อมต่อ"><span class="dot"></span><span id="connPillText">ยังไม่ได้เชื่อมต่อ</span></span>
+    <button type="button" class="theme-btn" data-theme-btn="neon">🌌 นีออน</button>
     <button type="button" class="theme-btn" data-theme-btn="tech">💻 เทคโนโลยี</button>
     <button type="button" class="theme-btn" data-theme-btn="cute">🌸 น่ารัก</button>
     <button type="button" class="gear-btn" id="openSettingsBtn" title="ตั้งค่า">⚙️</button>
@@ -2645,7 +2759,7 @@ document.getElementById('vendorForm').addEventListener('submit', async (e)=>{
 });
 
 // ---------- theme switcher ----------
-const THEME_KEY = 'procurement_dashboard_theme';
+const THEME_KEY = 'procurement_dashboard_theme_v2';
 function applyTheme(theme){
   document.documentElement.setAttribute('data-theme', theme);
   document.querySelectorAll('.theme-btn').forEach(b=>{
@@ -2656,8 +2770,8 @@ function applyTheme(theme){
 document.querySelectorAll('.theme-btn').forEach(b=>{
   b.addEventListener('click', ()=> applyTheme(b.dataset.themeBtn));
 });
-let savedTheme = 'tech';
-try{ savedTheme = localStorage.getItem(THEME_KEY) || 'tech'; }catch(e){}
+let savedTheme = 'neon';
+try{ savedTheme = localStorage.getItem(THEME_KEY) || 'neon'; }catch(e){}
 applyTheme(savedTheme);
 
 // ---------- settings panel (org name + Apps Script URL) ----------
