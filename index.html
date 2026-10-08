@@ -1305,12 +1305,7 @@ function renderCards(){
   const yearLabel = currentYear==='all' ? 'ทุกปีงบประมาณ' : ('ปีงบประมาณ '+currentYear);
   const totalBudget = rows.reduce((s,d)=>s+(d.budget||0),0);
   const totalActual = registerActualTotal(currentYear);
-  let note = '';
-  if(currentYear!=='all'){
-    const un = REGISTER_DATA.filter(r=>!r.budget_year);
-    if(un.length){ const amt = un.reduce((a,r)=>a+(r.total||0),0); note = ' · ไม่นับ '+un.length+' รายการที่ยังไม่ระบุปีงบ (รวม '+fmt(amt)+' ฿)'; }
-  }
-  const html = summaryCardsHtml(totalBudget, totalActual, rows.length, yearLabel, note);
+  const html = summaryCardsHtml(totalBudget, totalActual, rows.length, yearLabel);
   document.getElementById('summaryCards').innerHTML = html;
   document.getElementById('catSummaryCards').innerHTML = html;
 }
