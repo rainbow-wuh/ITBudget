@@ -379,7 +379,7 @@
     <section>
       <div class="section-head">
         <div class="section-title">งบประมาณตามหมวดหมู่</div>
-        <div class="section-note">แสดงครบทุกหมวดหมู่ของปีที่เลือก · ดูรายละเอียดเพิ่มเติมได้ที่เมนู "งบประมาณแยกตามหมวด"</div>
+        <div class="section-note">แสดงครบทุกหมวดหมู่ของปีที่เลือก · (ซื้อจริง/ตามแผน รายการ) · ดูรายละเอียดเพิ่มเติมได้ที่เมนู "งบประมาณแยกตามหมวด"</div>
       </div>
       <div class="gauge-list" id="gaugeListMini"></div>
     </section>
@@ -1176,12 +1176,13 @@ function gaugesHtml(rows, actualByCat, limit){
     byCat[key].count += 1;
   });
   // ยอดใช้จริงจากทะเบียน: โหมดทุกปีแยกตาม ปี·หมวด ให้ตรงกับแถวงบประมาณ (รายการไม่ระบุปีแยกเป็น "ไม่ระบุปี")
-  const actualMap = {};
+  const actualMap = {}, boughtMap = {};
   if(currentYear==='all'){
     REGISTER_DATA.forEach(r=>{
       const cat = r.category || NOCAT;
       const key = (r.budget_year || 'ไม่ระบุปี') + ' · ' + cat;
       actualMap[key] = (actualMap[key]||0) + (r.total||0);
+      boughtMap[key] = (boughtMap[key]||0) + 1;
       if(!byCat[key]) byCat[key] = {budget:0, count:0, category:cat};
     });
   }else{
@@ -1189,9 +1190,14 @@ function gaugesHtml(rows, actualByCat, limit){
       actualMap[cat] = val;
       if(!byCat[cat]) byCat[cat] = {budget:0, count:0, category:cat};
     });
+    REGISTER_DATA.forEach(r=>{
+      if(r.budget_year !== currentYear) return;
+      const cat = r.category || NOCAT;
+      boughtMap[cat] = (boughtMap[cat]||0) + 1;
+    });
   }
   let entries = Object.entries(byCat).map(([key,v])=>{
-    return [key, {...v, actual: actualMap[key] || 0}];
+    return [key, {...v, actual: actualMap[key] || 0, bought: boughtMap[key] || 0}];
   }).sort((a,b)=> (b[1].budget-a[1].budget) || (b[1].actual-a[1].actual));
   if(limit) entries = entries.slice(0, limit);
   return entries.map(([cat,v])=>{
@@ -1201,7 +1207,7 @@ function gaugesHtml(rows, actualByCat, limit){
     return `
     <div class="gauge-row">
       <div class="gauge-top">
-        <div class="gauge-cat">${cat} <span class="gauge-count">(${v.count ? v.count+" รายการ" : "ไม่มีงบตั้งไว้"})</span></div>
+        <div class="gauge-cat">${cat} <span class="gauge-count">(${v.count ? v.bought+"/"+v.count+" รายการ" : v.bought+" รายการ · ไม่มีงบตั้งไว้"})</span></div>
         <div class="gauge-figs"><b>${fmt(v.actual)}</b> / ${fmt(v.budget)} ฿</div>
       </div>
       <div class="vial">
