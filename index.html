@@ -93,6 +93,19 @@
     padding:4px 8px; border-radius:6px;
   }
   .settings-close:hover{background:var(--line); color:var(--ink);}
+  .conn-pill{
+    display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+    font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif; font-size:12.5px; font-weight:600;
+    padding:6px 14px; border-radius:20px; border:1px solid transparent; white-space:nowrap;
+  }
+  .conn-pill .dot{width:10px; height:10px; border-radius:50%; background:currentColor; flex:none;}
+  .conn-pill.connecting{background:#fff4d6; color:#8a5a00; border-color:#f0c869;}
+  .conn-pill.connecting .dot{animation:connpulse 1s ease-in-out infinite;}
+  .conn-pill.connected{background:#d9f7e3; color:#0b6b2e; border-color:#7fd69c;}
+  .conn-pill.error{background:#ffe0e0; color:#a11212; border-color:#f09a9a;}
+  .conn-pill.offline{background:#eceff1; color:#55606a; border-color:#c5cdd3;}
+  @keyframes connpulse{0%,100%{opacity:1; transform:scale(1);}50%{opacity:.3; transform:scale(.7);}}
+  @media (max-width:640px){ .theme-switch{flex-wrap:wrap; justify-content:flex-end; max-width:calc(100% - 32px);} }
   .sync-status{
     font-size:11.5px; font-family:'IBM Plex Mono',monospace; color:var(--ink-soft);
     position:relative; word-break:break-word; padding:8px 12px;
@@ -355,6 +368,7 @@
 
 <header>
   <div class="theme-switch" id="themeSwitch">
+    <span class="conn-pill offline" id="connPill" role="status" aria-live="polite" title="กดเพื่อเปิดตั้งค่าการเชื่อมต่อ"><span class="dot"></span><span id="connPillText">ยังไม่ได้เชื่อมต่อ</span></span>
     <button type="button" class="theme-btn" data-theme-btn="tech">💻 เทคโนโลยี</button>
     <button type="button" class="theme-btn" data-theme-btn="cute">🌸 น่ารัก</button>
     <button type="button" class="gear-btn" id="openSettingsBtn" title="ตั้งค่า">⚙️</button>
@@ -955,6 +969,13 @@ function setSyncStatus(state, note){
     offline: '⚪ ใช้ข้อมูลในไฟล์ (ยังไม่ได้เชื่อมต่อ Google Sheet)',
     error: '🔴 เชื่อมต่อ Google Sheet ไม่สำเร็จ — ใช้ข้อมูลในไฟล์แทน',
   };
+  const pill = document.getElementById('connPill');
+  if(pill){
+    const short = {connecting:'กำลังเชื่อมต่อ...', connected:'เชื่อมต่อสำเร็จ', error:'เชื่อมต่อไม่สำเร็จ', offline:'ยังไม่ได้เชื่อมต่อ'};
+    pill.className = 'conn-pill ' + state;
+    document.getElementById('connPillText').textContent = short[state] || '';
+    pill.title = note ? note : 'กดเพื่อเปิดตั้งค่าการเชื่อมต่อ';
+  }
   el.textContent = labels[state] || '';
   if(note){
     el.textContent += ' — รายละเอียด: ' + note;
@@ -1072,6 +1093,7 @@ async function connectGoogleSheet(){
     if(typeof populateVendorOptions === 'function') populateVendorOptions();
   }catch(e){}
 }
+document.getElementById('connPill').addEventListener('click', ()=> document.getElementById('openSettingsBtn').click());
 let DATA = [...SEED_DATA];
 
 let registerOverrides = {};
