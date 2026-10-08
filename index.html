@@ -106,6 +106,11 @@
   .conn-pill.offline{background:#eceff1; color:#55606a; border-color:#c5cdd3;}
   @keyframes connpulse{0%,100%{opacity:1; transform:scale(1);}50%{opacity:.3; transform:scale(.7);}}
   @media (max-width:640px){ .theme-switch{flex-wrap:wrap; justify-content:flex-end; max-width:calc(100% - 32px);} }
+  #connBanner{margin:0 0 16px; padding:12px 16px; border-radius:10px; font-size:14px; line-height:1.5; display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
+  #connBanner.err{background:#ffe0e0; color:#8f1010; border:1px solid #f09a9a;}
+  #connBanner.warn{background:#fff4d6; color:#6e4700; border:1px solid #f0c869;}
+  #connBanner.wait{background:#eceff1; color:#3d4852; border:1px solid #c5cdd3;}
+  #connBanner button{margin-left:auto; font-size:13px; padding:6px 14px; border-radius:8px; border:1px solid currentColor; background:transparent; color:inherit; cursor:pointer; font-weight:600;}
   .sync-status{
     font-size:11.5px; font-family:'IBM Plex Mono',monospace; color:var(--ink-soft);
     position:relative; word-break:break-word; padding:8px 12px;
@@ -449,7 +454,7 @@
         <input type="text" id="s-apps-script-url" placeholder="https://script.google.com/macros/s/.../exec">
       </div>
       <div class="sync-status-row">
-        <div class="sync-status offline" id="syncStatus">⚪ ใช้ข้อมูลในไฟล์ (ยังไม่ได้เชื่อมต่อ Google Sheet)</div>
+        <div class="sync-status offline" id="syncStatus">⚪ ยังไม่ได้เชื่อมต่อ Google Sheet (ยังไม่แสดงข้อมูล)</div>
         <button type="button" class="sync-retry-btn" id="retrySyncBtn">🔄 ลองใหม่</button>
         <button type="button" class="sync-retry-btn" id="diagBtn">🩺 ทดสอบการเชื่อมต่อ</button>
         <pre id="diagOut" style="white-space:pre-wrap;font-size:12px;margin-top:8px;max-height:220px;overflow:auto;"></pre>
@@ -464,6 +469,7 @@
 </div>
 
 <main>
+  <div id="connBanner" style="display:none"></div>
 
   <!-- ================= DASHBOARD ================= -->
   <div id="expiryAlert" class="expiry-alert" style="display:none" title="คลิกเพื่อดูรายการ"></div>
@@ -996,8 +1002,8 @@ function setSyncStatus(state, note){
   const labels = {
     connecting: '🔄 กำลังเชื่อมต่อ Google Sheet...',
     connected: '🟢 เชื่อมต่อ Google Sheet แล้ว',
-    offline: '⚪ ใช้ข้อมูลในไฟล์ (ยังไม่ได้เชื่อมต่อ Google Sheet)',
-    error: '🔴 เชื่อมต่อ Google Sheet ไม่สำเร็จ — ใช้ข้อมูลในไฟล์แทน',
+    offline: '⚪ ยังไม่ได้เชื่อมต่อ Google Sheet (ยังไม่แสดงข้อมูล)',
+    error: '🔴 เชื่อมต่อ Google Sheet ไม่สำเร็จ',
   };
   const pill = document.getElementById('connPill');
   if(pill){
@@ -1006,6 +1012,19 @@ function setSyncStatus(state, note){
     document.getElementById('connPillText').textContent = short[state] || '';
     pill.title = note ? note : 'กดเพื่อเปิดตั้งค่าการเชื่อมต่อ';
     updatePendingBadge();
+  }
+  const bn = document.getElementById('connBanner');
+  if(bn){
+    let cls='', html='';
+    if(state==='connected'){ cls=''; }
+    else if(!DATA_LOADED){
+      if(state==='connecting'){ cls='wait'; html='🔄 กำลังเชื่อมต่อ Google Sheet... ยังไม่แสดงข้อมูลจนกว่าจะโหลดเสร็จ'; }
+      else { cls='err'; html='⚠️ <b>เชื่อมต่อ Google Sheet ไม่ได้ จึงยังไม่แสดงข้อมูล</b> (ข้อมูลที่เห็นเป็นศูนย์ไม่ใช่ข้อมูลจริง) — ดูสาเหตุที่ป้ายมุมขวาบน หรือกดทดสอบการเชื่อมต่อใน ⚙️ <button type="button" id="bannerRetry">🔄 ลองใหม่</button>'; }
+    }else if(state==='error' || state==='offline'){
+      cls='warn'; html='⚠️ <b>เชื่อมต่อ Google Sheet ไม่ได้</b> — กำลังแสดงข้อมูลที่โหลดไว้ครั้งก่อน อาจไม่เป็นปัจจุบัน <button type="button" id="bannerRetry">🔄 ลองใหม่</button>';
+    }
+    bn.className = cls; bn.style.display = cls ? 'flex' : 'none'; bn.innerHTML = html;
+    const rb = document.getElementById('bannerRetry'); if(rb) rb.onclick = ()=> connectGoogleSheet({skipCache:true});
   }
   el.textContent = labels[state] || '';
   if(note){
@@ -1098,12 +1117,9 @@ function applySheetData(budgetRows, registerRows, vendorRows, projectRows){
   if(projectRows){ projects = parseProjectRows(projectRows); projectsLoaded = true; }
   const parsedBudget = parseBudgetRowsFromSheet(budgetRows);
   const parsedRegister = parseRegisterRowsFromSheet(registerRows);
-  if(parsedBudget.length){
-    SEED_DATA = parsedBudget.map(d => ({...d, source:'seed', id:'s'+d._row}));
-  }
-  if(parsedRegister.length){
-    REGISTER_SEED = parsedRegister.map((d,i) => ({...d, id:'s'+(d.no ?? i), source:'seed'}));
-  }
+  SEED_DATA = parsedBudget.map(d => ({...d, source:'seed', id:'s'+d._row}));
+  REGISTER_SEED = parsedRegister.map((d,i) => ({...d, id:'s'+(d.no ?? i), source:'seed'}));
+  DATA_LOADED = true;
   // โครงการที่ยังรอส่งขึ้น Sheet: ให้ยังเห็นในตาราง
   try{
     getPending().filter(q=>q.label==='project-add').forEach((q,i)=>{
@@ -1182,15 +1198,16 @@ async function connectGoogleSheet(opts){
   }catch(e){}
 }
 document.getElementById('connPill').addEventListener('click', ()=> document.getElementById('openSettingsBtn').click());
-let DATA = [...SEED_DATA];
+let DATA_LOADED = false;   // true เมื่อได้ข้อมูลจริงจาก Google Sheet (หรือที่เก็บไว้ล่าสุด) แล้วเท่านั้น
+let DATA = [];
 
 let registerOverrides = {};
 let addedRegister = [];
-let REGISTER_DATA = [...REGISTER_SEED];
+let REGISTER_DATA = [];
 
 function rebuildRegister(){
   const overridden = REGISTER_SEED.map(r => registerOverrides[r.id] ? {...r, ...registerOverrides[r.id]} : r);
-  REGISTER_DATA = [...overridden, ...addedRegister];
+  REGISTER_DATA = DATA_LOADED ? [...overridden, ...addedRegister] : [];
 }
 
 const REG_OVERRIDE_KEY = 'procurement_dashboard_register_overrides';
@@ -1255,7 +1272,7 @@ async function saveUserRecords(){
 }
 
 function rebuildData(){
-  DATA = [...SEED_DATA, ...userRecords.map(d=>({...d, source:'user'}))];
+  DATA = DATA_LOADED ? [...SEED_DATA, ...userRecords.map(d=>({...d, source:'user'}))] : [];
 }
 
 // ---------- menu switch ----------
