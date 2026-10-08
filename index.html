@@ -1069,7 +1069,7 @@ async function connectGoogleSheet(){
       fetchSheetRows('โครงการ').catch(()=>null),
     ]);
     if(vendorRowsEarly) vendors = parseVendorRowsFromSheet(vendorRowsEarly);
-    if(projectRowsEarly) projects = parseProjectRows(projectRowsEarly);
+    if(projectRowsEarly){ projects = parseProjectRows(projectRowsEarly); projectsLoaded = true; }
     const parsedBudget = parseBudgetRowsFromSheet(budgetRows);
     const parsedRegister = parseRegisterRowsFromSheet(registerRows);
     if(parsedBudget.length){
@@ -2001,6 +2001,7 @@ const PJ_SHEET = 'โครงการ';
 const PJ_STATUSES = ['เสนอโครงการ','อนุมัติแล้ว','กำลังดำเนินการ','เสร็จสิ้น','ยกเลิก'];
 const PJ_SOURCES = ['งบประมาณแผ่นดิน','งบรายได้โรงพยาบาล','เงินบริจาค/สนับสนุน'];
 let projects = [];
+let projectsLoaded = false;
 let pjEditId = null;
 let pjStatusFilter = '';
 
@@ -2222,15 +2223,14 @@ function renderProjBudget(){
   const NOCODE = '';
   const map = {};
   const get = c => (map[c] = map[c] || {code:c, names:[], requested:0, budget:0, count:0, actual:0, bought:0, items:[]});
-  const norm = c => String(c||'').trim();
+  const norm = c => String(c||'').normalize('NFKC').replace(/[\u2010-\u2015\u2212]/g,'-').replace(/\s+/g,'').toUpperCase();   // ไม่สนช่องว่าง/ตัวพิมพ์/ขีดต่างชนิด
   currentRows().forEach(d=>{ const g=get(norm(d.plan_code)); g.budget += d.budget||0; g.count++; });
   REGISTER_DATA.forEach(r=>{
     if(currentYear!=='all' && r.budget_year!==currentYear) return;
     const g=get(norm(r.plan_code)); g.actual += r.total||0; g.bought++; g.items.push(r);
   });
   (typeof projects!=='undefined' ? projects : []).forEach(p=>{
-    if(currentYear!=='all' && p.year && p.year!==currentYear) return;
-    const c = norm(p.plan_code);
+    const c = norm(p.plan_code);   // จับคู่ด้วยรหัสอย่างเดียว ไม่กรองตามปีของโครงการ
     if(!c) return;
     const g=get(c); g.names.push((p.code?p.code+' ':'')+p.name); g.requested += p.budget||0;
   });
@@ -2244,7 +2244,7 @@ function renderProjBudget(){
     const over = g.actual > g.budget && g.budget>0;
     const ticks = Array.from({length:10}).map(()=>'<span></span>').join('');
     const title = g.code ? esc(g.code) : 'ไม่ระบุรหัสงบประมาณ';
-    const pname = g.names.length ? g.names.map(esc).join(' · ') : (g.code ? '<span style="color:var(--warn,#c0392b)">ไม่พบโครงการที่ใช้รหัสนี้</span>' : '');
+    const pname = g.names.length ? g.names.map(esc).join(' · ') : (g.code ? (projectsLoaded ? '<span style="color:var(--warn,#c0392b)">ไม่พบโครงการที่ใช้รหัสนี้</span>' : '<span style="color:var(--ink-soft)">ยังโหลดรายการโครงการไม่ได้ (ตรวจสถานะการเชื่อมต่อมุมขวาบน)</span>') : '');
     const remain = g.budget - g.actual;
     const detail = g.items.length ? `<details style="margin-top:8px;font-size:12.5px;"><summary style="cursor:pointer;color:var(--ink-soft)">รายการที่ซื้อแล้ว (${g.items.length})</summary>`+
       g.items.map(r=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line,#8884)"><span>${esc(r.name)}</span><span style="white-space:nowrap">${fmt(r.total||0)} ฿</span></div>`).join('')+`</details>` : '';
