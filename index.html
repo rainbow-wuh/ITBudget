@@ -1286,14 +1286,14 @@ function registerActualByCategory(year){
   return map;
 }
 
-function summaryCardsHtml(totalBudget, totalActual, count, yearLabel){
+function summaryCardsHtml(totalBudget, totalActual, count, yearLabel, extraNote){
   const remain = totalBudget - totalActual;
   const rate = totalBudget>0 ? (totalActual/totalBudget*100) : 0;
   const cards = [
     {cls:'total', label:'งบประมาณที่ตั้งไว้', value:fmt(totalBudget)+' ฿', foot:count+' รายการ'},
-    {cls:'used', label:'ใช้ไปแล้วจริง', value:fmt(totalActual)+' ฿', foot:rate.toFixed(1)+'% ของงบทั้งหมด (จากทะเบียนจัดซื้อจัดจ้าง)'},
+    {cls:'used', label:'ใช้ไปแล้วจริง', value:fmt(totalActual)+' ฿', foot:(rate>0&&rate<0.1?rate.toFixed(3):rate.toFixed(1))+'% ของงบประมาณที่ตั้งไว้ (จากทะเบียนจัดซื้อจัดจ้าง)'+(extraNote||'')},
     {cls:'remain', label:'คงเหลือ', value:fmt(remain)+' ฿', foot:'ยังไม่ได้เบิกจ่าย'},
-    {cls:'rate', label:'อัตราเบิกจ่าย', value:rate.toFixed(1)+'%', foot:yearLabel},
+    {cls:'rate', label:'อัตราเบิกจ่าย', value:(rate>0&&rate<0.1?rate.toFixed(3):rate.toFixed(1))+'%', foot:yearLabel},
   ];
   return cards.map(c=>
     `<div class="card ${c.cls}"><div class="label">${c.label}</div><div class="value mono">${c.value}</div><div class="foot">${c.foot}</div></div>`
@@ -1305,7 +1305,12 @@ function renderCards(){
   const yearLabel = currentYear==='all' ? 'ทุกปีงบประมาณ' : ('ปีงบประมาณ '+currentYear);
   const totalBudget = rows.reduce((s,d)=>s+(d.budget||0),0);
   const totalActual = registerActualTotal(currentYear);
-  const html = summaryCardsHtml(totalBudget, totalActual, rows.length, yearLabel);
+  let note = '';
+  if(currentYear!=='all'){
+    const un = REGISTER_DATA.filter(r=>!r.budget_year);
+    if(un.length){ const amt = un.reduce((a,r)=>a+(r.total||0),0); note = ' · ไม่นับ '+un.length+' รายการที่ยังไม่ระบุปีงบ (รวม '+fmt(amt)+' ฿)'; }
+  }
+  const html = summaryCardsHtml(totalBudget, totalActual, rows.length, yearLabel, note);
   document.getElementById('summaryCards').innerHTML = html;
   document.getElementById('catSummaryCards').innerHTML = html;
 }
