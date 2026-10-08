@@ -195,6 +195,7 @@
   .view{display:none;}
   .view.active{display:block;}
 
+  .card.req .value{color:#1d5fd1;}   /* งบที่ขอในโครงการ: ตัวเลขสีน้ำเงิน */
   .cards{
     display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
     gap:14px; margin-bottom:28px;
@@ -2388,7 +2389,7 @@ function renderProjBudget(){
     // การ์ดแรก = งบที่ตั้งไว้ (รายการงบประมาณ) + จำนวนรายการ · การ์ดถัดไป = งบที่ขอในโครงการ
     const base = summaryCardsHtml(_rows.reduce((t,d)=>t+(d.budget||0),0), registerActualTotal(currentYear), _rows.length, currentYear==='all' ? 'ทุกปีงบประมาณ' : ('ปีงบประมาณ '+currentYear));
     const cut = base.indexOf('</div></div>') + '</div></div>'.length;
-    const reqCard = `<div class="card total"><div class="label">งบประมาณที่ขอในโครงการ</div><div class="value mono">${fmt(_pjReq)} ฿</div><div class="foot">${_pjList.length} โครงการ</div></div>`;
+    const reqCard = `<div class="card req"><div class="label">งบประมาณที่ขอในโครงการ</div><div class="value mono">${fmt(_pjReq)} ฿</div><div class="foot">${_pjList.length} โครงการ</div></div>`;
     sc.innerHTML = base.slice(0,cut) + reqCard + base.slice(cut);
   }
   const NOCODE = '';
