@@ -16,9 +16,26 @@ function out_(obj){
 function cell_(v){
   if(v instanceof Date){
     var d = ('0'+v.getDate()).slice(-2), m = ('0'+(v.getMonth()+1)).slice(-2);
-    return d + '/' + m + '/' + (v.getFullYear()+543);
+    var y = v.getFullYear();
+    if(y < 2400) y += 543;            // ปี ค.ศ. -> พ.ศ. (ถ้าเก็บเป็น พ.ศ. อยู่แล้วไม่บวกซ้ำ)
+    return d + '/' + m + '/' + y;
   }
   return v;
+}
+
+// คอลัมน์ที่ต้องเก็บเป็น "ข้อความ" เพื่อกัน Google Sheets แปลงเป็นวันที่เอง (เช่น 05/10/2569 ถูกสลับวัน/เดือน, 69-06 กลายเป็นวันที่)
+var TEXT_COLS_ = {
+  'ทะเบียนจัดซื้อจัดจ้าง': [8, 9, 10, 11, 14, 18],
+  'ทะเบียนผู้ขาย': [4],
+  'รายการงบประมาณ': [11]
+};
+
+function writeRow_(sh, rowNum, arr){
+  (TEXT_COLS_[sh.getName()] || []).forEach(function(c){
+    if(c <= arr.length) sh.getRange(rowNum, c).setNumberFormat('@');
+  });
+  var clean = arr.map(function(v){ return v === null || v === undefined ? '' : v; });
+  sh.getRange(rowNum, 1, 1, clean.length).setValues([clean]);
 }
 
 function doGet(e){
@@ -66,7 +83,7 @@ function doGet(e){
 
     if(action === 'add'){
       var row = JSON.parse(p.row);
-      sh.appendRow(row);
+      writeRow_(sh, sh.getLastRow() + 1, row);
       return out_({success:true});
     }
 
@@ -74,7 +91,7 @@ function doGet(e){
       var n = parseInt(p.row_num, 10);
       var arr = JSON.parse(p.row);
       if(!n || n < 1) return out_({error:'row_num ไม่ถูกต้อง'});
-      sh.getRange(n, 1, 1, arr.length).setValues([arr]);
+      writeRow_(sh, n, arr);
       return out_({success:true});
     }
 

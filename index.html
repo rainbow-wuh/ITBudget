@@ -619,7 +619,7 @@
             </div>
             <div class="field">
               <label for="r-delivery">วันส่งมอบ (วว/ดด/ปปปป)</label>
-              <input type="text" id="r-delivery" placeholder="เช่น 01/10/2568">
+              <input type="text" id="r-delivery" placeholder="วว/ดด/ปปปป (พ.ศ.) เช่น 01/10/2568">
             </div>
             <div class="field">
               <label for="r-expire-year">ปีที่หมดอายุ</label>
@@ -627,7 +627,7 @@
             </div>
             <div class="field">
               <label for="r-expire-date">หมดอายุวันที่ (วว/ดด/ปปปป)</label>
-              <input type="text" id="r-expire-date" placeholder="เช่น 30/09/2569">
+              <input type="text" id="r-expire-date" placeholder="วว/ดด/ปปปป (พ.ศ.) เช่น 30/09/2569">
             </div>
             <div class="field">
               <label for="r-doc">เลขที่หนังสือ</label>
@@ -1708,6 +1708,19 @@ function updateBudgetCheck(){
   el.addEventListener('change', updateBudgetCheck);
 });
 
+// แปลงวันที่ที่พิมพ์เป็น วว/ดด/ปปปป (พ.ศ.) — คืน '' ถ้าว่าง, null ถ้ารูปแบบไม่ถูกต้อง
+function normalizeThaiDateInput(v){
+  v = (v || '').trim();
+  if(!v) return '';
+  const m = v.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if(!m) return null;
+  let d = +m[1], mo = +m[2], y = +m[3];
+  if(y < 2400) y += 543;                      // พิมพ์เป็น ค.ศ. -> แปลงเป็น พ.ศ.
+  const test = new Date(y-543, mo-1, d);
+  if(mo<1 || mo>12 || d<1 || test.getDate()!==d || test.getMonth()!==mo-1) return null;
+  return String(d).padStart(2,'0') + '/' + String(mo).padStart(2,'0') + '/' + y;
+}
+
 document.getElementById('regForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const status = document.getElementById('regFormStatus');
@@ -1733,6 +1746,15 @@ document.getElementById('regForm').addEventListener('submit', async (e)=>{
     note: document.getElementById('r-note').value.trim(),
   };
   if(fields.qty!=null && fields.unit_price!=null) fields.total = fields.qty * fields.unit_price;
+
+  const dDeliver = normalizeThaiDateInput(fields.delivery_due), dExpire = normalizeThaiDateInput(fields.expire_date);
+  if(dDeliver === null || dExpire === null){
+    status.textContent = 'วันที่ไม่ถูกต้อง — กรอกเป็น วว/ดด/ปปปป (พ.ศ.) เช่น 05/10/2569';
+    status.className = 'form-status err';
+    return;
+  }
+  fields.delivery_due = dDeliver; fields.expire_date = dExpire;
+  if(dExpire && !fields.expire_year) fields.expire_year = dExpire.slice(-4);
 
   if(!fields.name){
     status.textContent = 'กรุณากรอกชื่อรายการ';
