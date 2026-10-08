@@ -1131,6 +1131,10 @@ function applySheetData(budgetRows, registerRows, vendorRows, projectRows){
   }catch(e){}
   rebuildData();
   rebuildRegister();
+  if(!yearChosen){   // เปิดครั้งแรก: เริ่มที่ปีงบประมาณล่าสุดที่มีข้อมูล
+    const ys = [...DATA.map(d=>d.year), ...REGISTER_DATA.map(r=>r.budget_year), ...projects.map(p=>p.year)].filter(y=>typeof y==='number' && y>2400);
+    if(ys.length) currentYear = Math.max(...ys);
+  }
   renderAll();
   populateRegSelect();
   populateBudgetSelect();
@@ -1244,6 +1248,7 @@ const fmt = n => (n||0).toLocaleString('th-TH', {maximumFractionDigits:0});
 const fmt2 = n => (n||0).toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2});
 
 let currentYear = 'all';
+let yearChosen = false;   // true เมื่อผู้ใช้เลือกปีเอง — ก่อนนั้นจะตั้งเป็นปีงบล่าสุดอัตโนมัติ
 let sortKey = 'budget';
 let sortAsc = false;
 let regSortKey = 'total';
@@ -1367,7 +1372,7 @@ function renderTabs(){
     `<div class="tab ${currentYear===o.v?'active':''}" data-y="${o.v}">${o.label}</div>`
   ).join('') + '<div class="tab" id="addYearTab" title="เพิ่มปีงบประมาณใหม่">+ เพิ่มปีงบ</div>';
   yearTabs.querySelectorAll('.tab[data-y]').forEach(t=>{
-    t.addEventListener('click', ()=>{ currentYear = t.dataset.y === 'all' ? 'all' : Number(t.dataset.y); renderAll(); });
+    t.addEventListener('click', ()=>{ yearChosen = true; currentYear = t.dataset.y === 'all' ? 'all' : Number(t.dataset.y); renderAll(); });
   });
   document.getElementById('addYearTab').addEventListener('click', addFiscalYear);
 }
@@ -1385,6 +1390,7 @@ function addFiscalYear(){
     extraYears.push(y);
     try{ localStorage.setItem(EXTRA_YEARS_KEY, JSON.stringify(extraYears)); }catch(e){}
   }
+  yearChosen = true;
   currentYear = y;
   renderAll();
   // ไปหน้ารายการงบประมาณ เปิดฟอร์มพร้อมใส่ปีให้ — ปีจะถูกบันทึกลง Google Sheet เมื่อบันทึกรายการแรก
