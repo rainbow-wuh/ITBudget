@@ -789,6 +789,7 @@
         </div>
       </div>
       <div class="gauge-list" id="gaugeListProj"></div>
+      <div id="projBudgetTotal" style="margin-top:16px"></div>
     </section>
   </div>
 
@@ -2422,6 +2423,19 @@ function renderProjBudget(){
       ${detail}
     </div>`;
   }).join('') || '<div class="gauge-row" style="text-align:center;color:var(--ink-soft)">ไม่มีข้อมูล · กรอก "รหัสงบประมาณ" ในรายการงบประมาณ ทะเบียนจัดซื้อ และโครงการให้ตรงกัน</div>';
+  // สรุปท้ายหน้า: งบที่ขอในโครงการทั้งหมด ตามปีที่เลือก
+  const pjYear = (typeof projects!=='undefined' ? projects : []).filter(p=> currentYear==='all' || p.year===currentYear || !p.year);
+  const pjReq = pjYear.reduce((t,p)=>t+(p.budget||0),0);
+  const totPlan = list.reduce((t,g)=>t+g.budget,0), totBought = list.reduce((t,g)=>t+g.actual,0);
+  const tb = document.getElementById('projBudgetTotal');
+  if(tb) tb.innerHTML = `
+    <div class="gauge-row" style="border:2px solid var(--primary,#0a7);">
+      <div class="gauge-top" style="margin-bottom:0">
+        <div class="gauge-cat">งบที่ขอในโครงการทั้งหมด <span class="gauge-count">(${pjYear.length} โครงการ · ${currentYear==='all'?'ทุกปีงบประมาณ':'ปีงบประมาณ '+currentYear})</span>
+          <div style="font-weight:400;font-size:12.5px;color:var(--ink-soft);margin-top:2px">ตั้งไว้ตามแผน ${fmt(totPlan)} ฿ · ซื้อแล้ว ${fmt(totBought)} ฿</div></div>
+        <div class="gauge-figs" style="font-size:18px"><b>${fmt(pjReq)}</b> ฿</div>
+      </div>
+    </div>`;
 }
 
 // ---------- vendor registry ----------
