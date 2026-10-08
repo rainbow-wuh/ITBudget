@@ -27,6 +27,7 @@ function cell_(v){
 var TEXT_COLS_ = {
   'ทะเบียนจัดซื้อจัดจ้าง': [8, 9, 10, 11, 14, 18],
   'ทะเบียนผู้ขาย': [4],
+  'โครงการ': [1, 10, 11, 18],
   'รายการงบประมาณ': [11]
 };
 
@@ -55,6 +56,17 @@ function doGet(e){
       return out_({success:true});
     }
 
+    if(action === 'setup_projects'){
+      var ps = ss.getSheetByName('โครงการ');
+      if(!ps){
+        ps = ss.insertSheet('โครงการ');
+        var heads = ['รหัสโครงการ','ชื่อโครงการ','ปีงบประมาณ','หน่วยงานเจ้าของโครงการ','ผู้รับผิดชอบโครงการ','ผู้ร่วมรับผิดชอบ','สถานที่ดำเนินการ','สอดคล้องกับยุทธศาสตร์','แหล่งงบประมาณ','วันเริ่มโครงการ','วันสิ้นสุดโครงการ','งบประมาณที่ขอ','หลักการและเหตุผล','วัตถุประสงค์','เป้าหมายเชิงปริมาณ','เป้าหมายเชิงคุณภาพ','ผลที่คาดว่าจะได้รับ','ตัวชี้วัด KPI (JSON)','หมายเหตุ','สถานะ'];
+        ps.getRange(1,1,1,heads.length).setValues([heads]).setFontWeight('bold');
+        ps.setFrozenRows(1);
+      }
+      return out_({success:true});
+    }
+
     if(action === 'setup_register_cols'){
       var rs = ss.getSheetByName('ทะเบียนจัดซื้อจัดจ้าง');
       if(rs){
@@ -76,7 +88,7 @@ function doGet(e){
     if(!sh) return out_({error:'ไม่พบชีตชื่อ: ' + p.sheet});
 
     if(action === 'list'){
-      var lr = sh.getLastRow(), lc = Math.max(sh.getLastColumn(), 18);
+      var lr = sh.getLastRow(), lc = Math.max(sh.getLastColumn(), 20);
       var rows = lr ? sh.getRange(1,1,lr,lc).getValues().map(function(r){ return r.map(cell_); }) : [];
       return out_({rows:rows});
     }
