@@ -2385,8 +2385,8 @@ function renderProjBudget(){
   const _pjReq = _pjList.reduce((t,p)=>t+(p.budget||0),0);
   const sc = document.getElementById('projSummaryCards');
   if(sc){
-    // การ์ดแรก = งบที่ตั้งไว้ (รายการงบประมาณ) + จำนวนโครงการ · การ์ดถัดไป = งบที่ขอในโครงการ
-    const base = summaryCardsHtml(_rows.reduce((t,d)=>t+(d.budget||0),0), registerActualTotal(currentYear), _pjList.length + ' โครงการ', currentYear==='all' ? 'ทุกปีงบประมาณ' : ('ปีงบประมาณ '+currentYear));
+    // การ์ดแรก = งบที่ตั้งไว้ (รายการงบประมาณ) + จำนวนรายการ · การ์ดถัดไป = งบที่ขอในโครงการ
+    const base = summaryCardsHtml(_rows.reduce((t,d)=>t+(d.budget||0),0), registerActualTotal(currentYear), _rows.length, currentYear==='all' ? 'ทุกปีงบประมาณ' : ('ปีงบประมาณ '+currentYear));
     const cut = base.indexOf('</div></div>') + '</div></div>'.length;
     const reqCard = `<div class="card total"><div class="label">งบประมาณที่ขอในโครงการ</div><div class="value mono">${fmt(_pjReq)} ฿</div><div class="foot">${_pjList.length} โครงการ</div></div>`;
     sc.innerHTML = base.slice(0,cut) + reqCard + base.slice(cut);
