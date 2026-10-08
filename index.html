@@ -2382,9 +2382,15 @@ function renderProjBudget(){
   // ยอดรวมทั้งหมดของปีที่เลือก (ชุดเดียวกับหน้า Dashboard)
   const _rows = currentRows();
   const _pjList = (typeof projects!=='undefined' ? projects : []).filter(p=> currentYear==='all' || p.year===currentYear || !p.year);
+  const _pjReq = _pjList.reduce((t,p)=>t+(p.budget||0),0);
   const sc = document.getElementById('projSummaryCards');
-  // ยอดรวม = งบที่ขอในโครงการทั้งหมดของปีที่เลือก
-  if(sc) sc.innerHTML = summaryCardsHtml(_pjList.reduce((t,p)=>t+(p.budget||0),0), registerActualTotal(currentYear), _pjList.length + ' โครงการ', currentYear==='all' ? 'ทุกปีงบประมาณ' : ('ปีงบประมาณ '+currentYear), '', 'งบประมาณที่ตั้งไว้ (รวมงบที่ขอในโครงการ)');
+  if(sc){
+    // การ์ดแรก = งบที่ตั้งไว้ (รายการงบประมาณ) + จำนวนโครงการ · การ์ดถัดไป = งบที่ขอในโครงการ
+    const base = summaryCardsHtml(_rows.reduce((t,d)=>t+(d.budget||0),0), registerActualTotal(currentYear), _pjList.length + ' โครงการ', currentYear==='all' ? 'ทุกปีงบประมาณ' : ('ปีงบประมาณ '+currentYear));
+    const cut = base.indexOf('</div></div>') + '</div></div>'.length;
+    const reqCard = `<div class="card total"><div class="label">งบประมาณที่ขอในโครงการ</div><div class="value mono">${fmt(_pjReq)} ฿</div><div class="foot">${_pjList.length} โครงการ</div></div>`;
+    sc.innerHTML = base.slice(0,cut) + reqCard + base.slice(cut);
+  }
   const NOCODE = '';
   const map = {};
   const get = c => (map[c] = map[c] || {code:c, names:[], requested:0, budget:0, count:0, actual:0, bought:0, items:[], plans:[]});
