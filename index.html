@@ -457,14 +457,6 @@
 
     <section>
       <div class="section-head">
-        <div class="section-title">งบประมาณตามหมวดหมู่</div>
-        <div class="section-note">แสดงครบทุกหมวดหมู่ของปีที่เลือก · (ซื้อจริง/ตามแผน รายการ) · ดูรายละเอียดเพิ่มเติมได้ที่เมนู "งบประมาณแยกตามหมวด"</div>
-      </div>
-      <div class="gauge-list" id="gaugeListMini"></div>
-    </section>
-
-    <section>
-      <div class="section-head">
         <div class="section-title">สัญญา/รายการใกล้หมดอายุ</div>
         <div class="section-note">น้อยกว่า 1 ปี — รายการอยู่ในตารางจนถึงวันหมดอายุ (สีแดง = เหลือน้อยกว่า 3 เดือน) กดปุ่มเพื่อบันทึกผล ระบบจะหยุดแจ้งเตือนแต่ยังแสดงสถานะไว้</div>
       </div>
@@ -1368,7 +1360,6 @@ function renderGauges(){
   const rows = currentRows();
   const actualByCat = registerActualByCategory(currentYear);
   document.getElementById('gaugeListFull').innerHTML = gaugesHtml(rows, actualByCat);
-  document.getElementById('gaugeListMini').innerHTML = gaugesHtml(rows, actualByCat);
 }
 
 // ---------- expiring contracts (dashboard) ----------
