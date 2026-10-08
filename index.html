@@ -1437,7 +1437,7 @@ function summaryCardsHtml(totalBudget, totalActual, count, yearLabel, extraNote)
   const remain = totalBudget - totalActual;
   const rate = totalBudget>0 ? (totalActual/totalBudget*100) : 0;
   const cards = [
-    {cls:'total', label:'งบประมาณที่ตั้งไว้', value:fmt(totalBudget)+' ฿', foot:count+' รายการ'},
+    {cls:'total', label:'งบประมาณที่ตั้งไว้', value:fmt(totalBudget)+' ฿', foot:(typeof count==='number' ? count+' รายการ' : count)},
     {cls:'used', label:'ใช้ไปแล้วจริง', value:fmt(totalActual)+' ฿', foot:(rate>0&&rate<0.1?rate.toFixed(3):rate.toFixed(1))+'% ของงบประมาณที่ตั้งไว้ (จากทะเบียนจัดซื้อจัดจ้าง)'+(extraNote||'')},
     {cls:'remain', label:'คงเหลือ', value:fmt(remain)+' ฿', foot:'ยังไม่ได้เบิกจ่าย'},
     {cls:'rate', label:'อัตราเบิกจ่าย', value:(rate>0&&rate<0.1?rate.toFixed(3):rate.toFixed(1))+'%', foot:yearLabel},
@@ -2381,8 +2381,9 @@ function renderProjBudget(){
   if(!el) return;
   // ยอดรวมทั้งหมดของปีที่เลือก (ชุดเดียวกับหน้า Dashboard)
   const _rows = currentRows();
+  const _pjN = (typeof projects!=='undefined' ? projects : []).filter(p=> currentYear==='all' || p.year===currentYear || !p.year).length;
   const sc = document.getElementById('projSummaryCards');
-  if(sc) sc.innerHTML = summaryCardsHtml(_rows.reduce((t,d)=>t+(d.budget||0),0), registerActualTotal(currentYear), _rows.length, currentYear==='all' ? 'ทุกปีงบประมาณ' : ('ปีงบประมาณ '+currentYear));
+  if(sc) sc.innerHTML = summaryCardsHtml(_rows.reduce((t,d)=>t+(d.budget||0),0), registerActualTotal(currentYear), _pjN + ' โครงการ', currentYear==='all' ? 'ทุกปีงบประมาณ' : ('ปีงบประมาณ '+currentYear));
   const NOCODE = '';
   const map = {};
   const get = c => (map[c] = map[c] || {code:c, names:[], requested:0, budget:0, count:0, actual:0, bought:0, items:[], plans:[]});
