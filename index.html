@@ -885,7 +885,7 @@ function jsonpCall(url, params){
   return new Promise((resolve, reject)=>{
     const cb = '__gs_cb_' + Date.now() + '_' + Math.floor(Math.random()*1e6);
     const sc = document.createElement('script');
-    const timer = setTimeout(()=>{ cleanup(); reject(new Error('หมดเวลารอ Apps Script (JSONP)')); }, 20000);
+    const timer = setTimeout(()=>{ cleanup(); reject(new Error('หมดเวลารอ Apps Script (JSONP)')); }, 40000);
     function cleanup(){ clearTimeout(timer); delete window[cb]; sc.remove(); }
     window[cb] = (data)=>{ cleanup(); resolve(data); };
     sc.onerror = ()=>{ cleanup(); reject(new Error('โหลดสคริปต์จาก Apps Script ไม่ได้ (JSONP)')); };
@@ -901,7 +901,7 @@ async function gsCall(params){
   let fetchErr = '';
   try{
     const ctl = new AbortController();
-    const to = setTimeout(()=>ctl.abort(), 25000);
+    const to = setTimeout(()=>ctl.abort(), 40000);
     let res, text;
     try{ res = await fetch(url + '?' + params, {signal: ctl.signal}); text = await res.text(); }
     finally{ clearTimeout(to); }
@@ -914,12 +914,12 @@ async function gsCall(params){
     }
   }catch(e){
     if(e.message && e.message.startsWith('Apps Script ต้องการ')) throw e;
-    fetchErr = e.name === 'AbortError' ? 'ช้าเกิน 25 วินาที' : (e.message || 'fetch ล้มเหลว');
+    fetchErr = e.name === 'AbortError' ? 'ช้าเกิน 40 วินาที' : (e.message || 'fetch ล้มเหลว');
   }
   try{
     return await jsonpCall(url, params);
   }catch(e2){
-    throw new Error('เชื่อมต่อ Apps Script ไม่ได้ (' + fetchErr + '; ' + e2.message + ') — เช็ค URL ลงท้าย /exec, Who has access = Anyone, และวางโค้ด v4 + Deploy ใหม่');
+    throw new Error('เชื่อมต่อ Apps Script ไม่ได้ (' + fetchErr + '; ' + e2.message + ') — อาจเป็นที่เครือข่าย/เบราว์เซอร์ (ลองเน็ตอื่นหรือหน้าต่างไม่ระบุตัวตน) หรือ URL/สิทธิ์ของ Apps Script (ต้องลงท้าย /exec และ Who has access = Anyone)');
   }
 }
 
@@ -931,13 +931,42 @@ async function fetchSheetRows(sheetName){
 }
 
 let lastSheetError = '';
+// ---------- คิวรอส่ง: เก็บคำสั่งที่ส่งไม่สำเร็จไว้ในเครื่อง แล้วส่งใหม่อัตโนมัติ ----------
+const PENDING_KEY = 'procurement_pending_v1';
+function getPending(){ try{ return JSON.parse(localStorage.getItem(PENDING_KEY)||'[]'); }catch(e){ return []; } }
+function setPending(a){ try{ localStorage.setItem(PENDING_KEY, JSON.stringify(a)); }catch(e){} updatePendingBadge(); }
+function enqueuePending(params, label){ const a = getPending(); a.push({params, label, ts:Date.now()}); setPending(a); }
+function updatePendingBadge(){
+  const n = getPending().length, el = document.getElementById('connPillText'), pill = document.getElementById('connPill');
+  if(!el || !pill) return;
+  el.textContent = el.textContent.replace(/ · รอส่ง \d+$/, '') + (n ? ' · รอส่ง ' + n : '');
+  if(n) pill.title = 'มี ' + n + ' รายการที่ยังส่งไป Google Sheet ไม่สำเร็จ เก็บไว้ในเครื่องและจะส่งใหม่อัตโนมัติ (อย่าล้างข้อมูลเบราว์เซอร์)';
+}
+let flushing = false;
+async function flushPending(){
+  if(flushing) return; flushing = true;
+  try{
+    let a = getPending(), sent = 0;
+    while(a.length){
+      let ok = false;
+      try{ const d = await gsCall(a[0].params); ok = !!(d && (d.success || d.ok)); }catch(e){ ok = false; }
+      if(!ok) break;
+      a = getPending().slice(1); setPending(a); sent++;
+    }
+    if(sent){ toast('✓ ส่งรายการที่ค้างไว้ ' + sent + ' รายการลง Google Sheet แล้ว'); connectGoogleSheet({skipCache:true}); }
+  } finally { flushing = false; }
+}
+setInterval(()=>{ if(getPending().length) flushPending(); }, 60000);
+
 function newRid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,10); }
 
 async function sheetWrite(params){
   lastSheetError = '';
   if(!getAppsScriptUrl()){ lastSheetError = 'ยังไม่ได้ตั้งค่า Apps Script URL (⚙️)'; return false; }
   try{
-    const data = await gsCall(params);
+    let data;
+    try{ data = await gsCall(params); }
+    catch(e1){ data = await gsCall(params); }   // ลองซ้ำอีกครั้ง (เลขอ้างอิงคำขอเดิม ไม่ซ้ำที่ฝั่ง Sheet)
     if(data && data.error){ lastSheetError = String(data.error); return false; }
     if(data && (data.success || data.ok || data.status === 'ok')) return true;
     lastSheetError = 'Apps Script ตอบกลับไม่ถูกต้อง: ' + JSON.stringify(data).slice(0,120);
@@ -976,6 +1005,7 @@ function setSyncStatus(state, note){
     pill.className = 'conn-pill ' + state;
     document.getElementById('connPillText').textContent = short[state] || '';
     pill.title = note ? note : 'กดเพื่อเปิดตั้งค่าการเชื่อมต่อ';
+    updatePendingBadge();
   }
   el.textContent = labels[state] || '';
   if(note){
@@ -1074,6 +1104,14 @@ function applySheetData(budgetRows, registerRows, vendorRows, projectRows){
   if(parsedRegister.length){
     REGISTER_SEED = parsedRegister.map((d,i) => ({...d, id:'s'+(d.no ?? i), source:'seed'}));
   }
+  // โครงการที่ยังรอส่งขึ้น Sheet: ให้ยังเห็นในตาราง
+  try{
+    getPending().filter(q=>q.label==='project-add').forEach((q,i)=>{
+      const row = JSON.parse(decodeURIComponent((q.params.match(/[&?]row=([^&]*)/)||[])[1]||'[]'));
+      const pj = parseProjectRows([[], row])[0];
+      if(pj) projects.push({...pj, _row: 100000+i, id:'pq'+i, pending:true});
+    });
+  }catch(e){}
   rebuildData();
   rebuildRegister();
   renderAll();
@@ -1128,6 +1166,7 @@ async function connectGoogleSheet(opts){
     applySheetData(budgetRows, registerRows, vendorRows, projectRows);
     saveCache({budget:budgetRows, register:registerRows, vendors:vendorRows, projects:projectRows});
     setSyncStatus('connected');
+    if(getPending().length) flushPending();
     if(needSetup){
       Promise.all([gsCall('action=setup_budget_code'), gsCall('action=setup_register_cols'), gsCall('action=setup_projects')])
         .then(()=>{ try{ localStorage.setItem(setupFlagKey(), '1'); }catch(e){} }).catch(()=>{});
@@ -2278,12 +2317,21 @@ document.getElementById('pjForm').addEventListener('submit', async (e)=>{
   renderAll();
   renderProjects();
   toast('⏳ กำลังบันทึกลง Google Sheet... (อย่าปิดหน้านี้)');
+  const wParams = old
+    ? `action=update&sheet=${encodeURIComponent(PJ_SHEET)}&row_num=${rowForWrite}&row=${encodeURIComponent(JSON.stringify(projectRow(rec)))}`
+    : `action=add&rid=${newRid()}&sheet=${encodeURIComponent(PJ_SHEET)}&row=${encodeURIComponent(JSON.stringify(projectRow(rec)))}`;
   let ok = false;
-  try{ ok = old ? await updateSheetRow(PJ_SHEET, rowForWrite, projectRow(rec)) : await appendSheetRow(PJ_SHEET, projectRow(rec)); }
+  try{ ok = await sheetWrite(wParams); }
   finally{ window.__pjSaving = false; }
   if(!ok){
-    alert(failMsg('บันทึกโครงการ') + '\n\nรายการที่เห็นบนหน้าจอยังไม่ได้ถูกบันทึก — กำลังโหลดข้อมูลจริงจาก Sheet กลับมา');
-    connectGoogleSheet({skipCache:true});
+    if(/ไม่พบเลขแถว|ไม่ถูกต้อง|ไม่พบชีต/.test(lastSheetError||'')){
+      alert(failMsg('บันทึกโครงการ'));
+      connectGoogleSheet({skipCache:true});
+      return;
+    }
+    enqueuePending(wParams, old ? 'project-update' : 'project-add');
+    toast('⚠ ยังส่งไป Google Sheet ไม่ได้ — เก็บไว้ในเครื่องแล้ว จะส่งใหม่อัตโนมัติ');
+    alert('ส่งโครงการไป Google Sheet ไม่สำเร็จ\n\nไม่ต้องกรอกใหม่: ระบบเก็บไว้ในเครื่องนี้แล้ว และจะลองส่งใหม่อัตโนมัติทุก 1 นาที (หรือตอนเปิดหน้าอีกครั้ง) ดูสถานะ "รอส่ง" ที่ป้ายมุมขวาบน\nอย่าล้างข้อมูลเบราว์เซอร์จนกว่าจะส่งสำเร็จ\n\nสาเหตุ: ' + (lastSheetError||''));
     return;
   }
   refreshAfterWrite();
