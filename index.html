@@ -991,9 +991,9 @@ function parseRegisterRowsFromSheet(rows){
       plan_code: r[17] ? String(r[17]) : '',
       name: r[2] || '',
       unit: r[3] || '',
-      qty: (typeof r[4]==='number') ? r[4] : null,
-      unit_price: (typeof r[5]==='number') ? r[5] : null,
-      total: (typeof r[6]==='number') ? r[6] : null,
+      qty: toNum(r[4]),
+      unit_price: toNum(r[5]),
+      total: (toNum(r[6]) != null) ? toNum(r[6]) : ((toNum(r[4]) != null && toNum(r[5]) != null) ? toNum(r[4])*toNum(r[5]) : null),
       renew_period: r[7] || '',
       delivery_due: r[8] || '',
       expire_year: r[9] || '',
@@ -1261,6 +1261,14 @@ function currentRows(){
 
 // ---------- summary cards (shared calc) ----------
 // ---------- actual-used figures sourced from ทะเบียนจัดซื้อจัดจ้าง only ----------
+function toNum(v){
+  if(typeof v==='number') return isFinite(v) ? v : null;
+  if(v==null) return null;
+  const t=String(v).replace(/[,฿\s]/g,'').replace(/บาท/g,'');
+  if(t==='' || isNaN(Number(t))) return null;
+  return Number(t);
+}
+
 function registerActualTotal(year){
   return REGISTER_DATA.reduce((s,r)=>{
     if(year !== 'all' && r.budget_year !== year) return s; // no year tagged -> only counted in "all"
