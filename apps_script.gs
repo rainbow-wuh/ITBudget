@@ -32,9 +32,11 @@ var TEXT_COLS_ = {
 };
 
 function writeRow_(sh, rowNum, arr){
-  (TEXT_COLS_[sh.getName()] || []).forEach(function(c){
-    if(c <= arr.length) sh.getRange(rowNum, c).setNumberFormat('@');
-  });
+  var cols = (TEXT_COLS_[sh.getName()] || []).filter(function(c){ return c <= arr.length; });
+  if(cols.length){
+    // รวมเป็นคำสั่งเดียว (เร็วกว่าสั่งทีละช่อง)
+    sh.getRangeList(cols.map(function(c){ return sh.getRange(rowNum, c).getA1Notation(); })).setNumberFormat('@');
+  }
   var clean = arr.map(function(v){ return v === null || v === undefined ? '' : v; });
   sh.getRange(rowNum, 1, 1, clean.length).setValues([clean]);
 }

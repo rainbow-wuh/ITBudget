@@ -1081,14 +1081,25 @@ function applySheetData(budgetRows, registerRows, vendorRows, projectRows){
   if(document.querySelector('.menu-item.active')?.dataset.view === 'register') renderRegister();
 }
 
+function toast(msg){
+  let t = document.getElementById('toastBox');
+  if(!t){ t = document.createElement('div'); t.id='toastBox';
+    t.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#0b6b2e;color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 6px 20px #0004;transition:opacity .3s;';
+    document.body.appendChild(t); }
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(t._h); t._h = setTimeout(()=>{ t.style.opacity='0'; }, 3500);
+}
+// หลังบันทึก (เพิ่ม/แก้ไข): ไม่ต้องรอโหลดใหม่ทั้งหมด — แจ้งว่าบันทึกแล้ว แล้วอัปเดตรายการเบื้องหลัง
+function refreshAfterWrite(){ toast('✓ บันทึกแล้ว — กำลังอัปเดตรายการ...'); connectGoogleSheet({skipCache:true}); }
+
 let connectBusy = false, connectPending = false;
-async function connectGoogleSheet(){
+async function connectGoogleSheet(opts){
   if(connectBusy){ connectPending = true; return; }
   connectBusy = true;
   setSyncStatus('connecting');
   // แสดงข้อมูลที่เคยโหลดไว้ทันที (ระหว่างรออัปเดตจาก Google Sheet)
   const cached = loadCache();
-  if(cached){
+  if(cached && !(opts && opts.skipCache)){
     try{ applySheetData(cached.budget, cached.register, cached.vendors, cached.projects); }catch(e){}
     setSyncStatus('connecting', 'กำลังอัปเดต — ระหว่างนี้แสดงข้อมูลที่บันทึกไว้เมื่อ ' + new Date(cached.ts).toLocaleString('th-TH'));
   }
@@ -1124,7 +1135,7 @@ async function connectGoogleSheet(){
     setSyncStatus('error', e.message + (cached ? ' (กำลังแสดงข้อมูลที่บันทึกไว้ล่าสุด)' : ''));
   }
   connectBusy = false;
-  if(connectPending){ connectPending = false; return connectGoogleSheet(); }
+  if(connectPending){ connectPending = false; return connectGoogleSheet({skipCache:true}); }
   try{
     if(document.querySelector('.menu-item.active')?.dataset.view === 'vendors') renderVendors();
     if(typeof populateVendorOptions === 'function') populateVendorOptions();
@@ -1478,7 +1489,7 @@ async function closeRegisterItem(id, newStatus){
   const m = {...rec, status:newStatus};
   const ok = await updateSheetRow('ทะเบียนจัดซื้อจัดจ้าง', rec._row, regRow(m));
   if(!ok){ alert('บันทึกไม่สำเร็จ' + (typeof lastSheetError !== 'undefined' && lastSheetError ? ' — ' + lastSheetError : '')); return; }
-  await connectGoogleSheet();
+  refreshAfterWrite();
   renderExpiring();
 }
 function renderExpiring(){
@@ -1716,7 +1727,7 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
         status.className = 'form-status ok';
         document.getElementById('addForm').reset();
         document.getElementById('f-select').value = '';
-        await connectGoogleSheet();
+        refreshAfterWrite();
         hideAddForm();
       }else{
         status.textContent = failMsg('แก้ไข');
@@ -1732,7 +1743,7 @@ document.getElementById('addForm').addEventListener('submit', async (e)=>{
       status.textContent = 'บันทึกรายการเรียบร้อย';
       status.className = 'form-status ok';
       document.getElementById('addForm').reset();
-      await connectGoogleSheet();
+      refreshAfterWrite();
       hideAddForm();
     }else{
       status.textContent = failMsg('บันทึก');
@@ -2010,7 +2021,7 @@ document.getElementById('regForm').addEventListener('submit', async (e)=>{
   if(ok){
     status.textContent = 'บันทึกข้อมูลลง Google Sheet เรียบร้อย';
     status.className = 'form-status ok';
-    await connectGoogleSheet();
+    refreshAfterWrite();
     renderRegister();
     renderExpiring();
   }else{
@@ -2238,7 +2249,10 @@ document.getElementById('pjForm').addEventListener('submit', async (e)=>{
   if(!ok){ err.textContent = failMsg('บันทึก'); return; }
   closeProjectForm();
   if(currentYear!=='all' && currentYear!==year) currentYear = year;   // ไปที่ปีของโครงการที่เพิ่งบันทึก จะได้เห็นทันที
-  await connectGoogleSheet();
+  // แสดงผลทันที (ก่อนโหลดจาก Sheet เสร็จ)
+  if(old){ Object.assign(old, rec); }
+  else{ const nr = projects.reduce((m,x)=>Math.max(m,x._row||1),1) + 1; projects.push({...rec, _row:nr, id:'p'+nr}); }
+  refreshAfterWrite();
   renderAll();
   renderProjects();
 });
@@ -2484,7 +2498,7 @@ document.getElementById('vendorForm').addEventListener('submit', async (e)=>{
     status.className = 'form-status ok';
     document.getElementById('vendorForm').reset();
     document.getElementById('v-select').value = '';
-    await connectGoogleSheet();
+    refreshAfterWrite();
     renderVendors();
   }else{
     status.textContent = failMsg('บันทึก');
