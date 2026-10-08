@@ -367,6 +367,7 @@
     <div class="menu-item" data-view="budget-list">รายการงบประมาณ</div>
     <div class="menu-item" data-view="budget-cat">งบประมาณแยกตามหมวด</div>
     <div class="menu-item" data-view="projects">โครงการ</div>
+    <div class="menu-item" data-view="budget-proj">งบประมาณแยกตามโครงการ</div>
     <div class="menu-item" data-view="register">รายการจัดซื้อจัดจ้าง</div>
     <div class="menu-item" data-view="vendors">ทะเบียนผู้ขาย</div>
   </div>
@@ -753,6 +754,19 @@
         </table>
       </div>
       <div class="pj-foot" id="pjFoot"></div>
+    </section>
+  </div>
+
+  <!-- ================= งบประมาณแยกตามโครงการ ================= -->
+  <div class="view" id="view-budget-proj">
+    <section>
+      <div class="section-head">
+        <div>
+          <div class="section-title" style="font-size:20px;">งบประมาณแยกตามโครงการ</div>
+          <div class="section-note">จับคู่ด้วย "รหัสงบประมาณ" ที่ตรงกัน · งบที่ตั้งไว้ (รายการงบประมาณ) เทียบกับที่ซื้อไปแล้ว (ทะเบียนจัดซื้อจัดจ้าง) · ตามปีงบประมาณที่เลือกด้านบน</div>
+        </div>
+      </div>
+      <div class="gauge-list" id="gaugeListProj"></div>
     </section>
   </div>
 
@@ -1143,6 +1157,7 @@ document.querySelectorAll('.menu-item').forEach(m=>{
     if(m.dataset.view === 'register') renderRegister();
     if(m.dataset.view === 'vendors') renderVendors();
     if(m.dataset.view === 'projects') renderProjects();
+    if(m.dataset.view === 'budget-proj') renderProjBudget();
   });
 });
 
@@ -1953,6 +1968,7 @@ function renderAll(){
   renderExpiring();
   if(document.querySelector('.menu-item.active')?.dataset.view === 'register') renderRegister();
   if(document.querySelector('.menu-item.active')?.dataset.view === 'projects') renderProjects();
+  if(document.querySelector('.menu-item.active')?.dataset.view === 'budget-proj') renderProjBudget();
 }
 
 
@@ -2165,6 +2181,56 @@ async function deleteProject(id){
   if(!ok){ alert(failMsg('ลบ')); return; }
   await connectGoogleSheet();
   renderProjects();
+}
+
+// ================= งบประมาณแยกตามโครงการ (จับคู่ด้วยรหัสงบประมาณ) =================
+function renderProjBudget(){
+  const el = document.getElementById('gaugeListProj');
+  if(!el) return;
+  const NOCODE = '';
+  const map = {};
+  const get = c => (map[c] = map[c] || {code:c, names:[], requested:0, budget:0, count:0, actual:0, bought:0, items:[]});
+  const norm = c => String(c||'').trim();
+  currentRows().forEach(d=>{ const g=get(norm(d.plan_code)); g.budget += d.budget||0; g.count++; });
+  REGISTER_DATA.forEach(r=>{
+    if(currentYear!=='all' && r.budget_year!==currentYear) return;
+    const g=get(norm(r.plan_code)); g.actual += r.total||0; g.bought++; g.items.push(r);
+  });
+  (typeof projects!=='undefined' ? projects : []).forEach(p=>{
+    if(currentYear!=='all' && p.year && p.year!==currentYear) return;
+    const c = norm(p.plan_code);
+    if(!c) return;
+    const g=get(c); g.names.push((p.code?p.code+' ':'')+p.name); g.requested += p.budget||0;
+  });
+  const list = Object.values(map).filter(g=>g.code!==NOCODE || g.budget || g.actual)
+    .sort((a,b)=>{
+      if(!a.code !== !b.code) return a.code ? -1 : 1;           // ไม่มีรหัส ไว้ท้ายสุด
+      if(!a.names.length !== !b.names.length) return a.names.length ? -1 : 1;
+      return (b.budget-a.budget) || (b.actual-a.actual);
+    });
+  el.innerHTML = list.map(g=>{
+    const pct = g.budget>0 ? Math.min(100,(g.actual/g.budget*100)) : 0;
+    const over = g.actual > g.budget && g.budget>0;
+    const ticks = Array.from({length:10}).map(()=>'<span></span>').join('');
+    const title = g.code ? esc(g.code) : 'ไม่ระบุรหัสงบประมาณ';
+    const pname = g.names.length ? g.names.map(esc).join(' · ') : (g.code ? '<span style="color:var(--warn,#c0392b)">ไม่พบโครงการที่ใช้รหัสนี้</span>' : '');
+    const remain = g.budget - g.actual;
+    const detail = g.items.length ? `<details style="margin-top:8px;font-size:12.5px;"><summary style="cursor:pointer;color:var(--ink-soft)">รายการที่ซื้อแล้ว (${g.items.length})</summary>`+
+      g.items.map(r=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line,#8884)"><span>${esc(r.name)}</span><span style="white-space:nowrap">${fmt(r.total||0)} ฿</span></div>`).join('')+`</details>` : '';
+    return `
+    <div class="gauge-row">
+      <div class="gauge-top">
+        <div class="gauge-cat">${title} <span class="gauge-count">(ซื้อแล้ว ${g.bought}/${g.count} รายการ)</span><div style="font-weight:400;font-size:12.5px;color:var(--ink-soft);margin-top:2px">${pname}</div></div>
+        <div class="gauge-figs"><b>${fmt(g.actual)}</b> / ${fmt(g.budget)} ฿<br>คงเหลือ <b>${fmt(remain)}</b> ฿${g.requested?'<br>งบที่ขอในโครงการ '+fmt(g.requested)+' ฿':''}</div>
+      </div>
+      <div class="vial">
+        <div class="vial-fill ${over?'over':''}" style="width:${g.budget>0?Math.max(pct,1.5):0}%"></div>
+        <div class="vial-ticks">${ticks}</div>
+        <div class="vial-pct">${g.budget>0 ? pct.toFixed(0)+'%' : 'ไม่มีงบ'}</div>
+      </div>
+      ${detail}
+    </div>`;
+  }).join('') || '<div class="gauge-row" style="text-align:center;color:var(--ink-soft)">ไม่มีข้อมูล · กรอก "รหัสงบประมาณ" ในรายการงบประมาณ ทะเบียนจัดซื้อ และโครงการให้ตรงกัน</div>';
 }
 
 // ---------- vendor registry ----------
