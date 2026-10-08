@@ -42,15 +42,13 @@ function writeRow_(sh, rowNum, arr){
 // กันคำสั่งเพิ่ม/ลบซ้ำ: คำขอที่มี rid เดียวกัน (เช่น เว็บส่งซ้ำเมื่อเน็ตช้า) จะทำเพียงครั้งเดียว
 function dupRequest_(rid){
   if(!rid) return false;
-  var lock = LockService.getScriptLock();
-  lock.waitLock(20000);
   try{
     var cache = CacheService.getScriptCache();
     var key = 'rid_' + rid;
     if(cache.get(key)) return true;
     cache.put(key, '1', 21600);
-    return false;
-  }finally{ lock.releaseLock(); }
+  }catch(err){ /* ถ้า cache ใช้ไม่ได้ ให้ทำงานต่อตามปกติ */ }
+  return false;
 }
 
 function doGet(e){
