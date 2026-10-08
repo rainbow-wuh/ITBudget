@@ -2237,8 +2237,7 @@ function renderProjBudget(){
   const list = Object.values(map).filter(g=>g.code!==NOCODE || g.budget || g.actual)
     .sort((a,b)=>{
       if(!a.code !== !b.code) return a.code ? -1 : 1;           // ไม่มีรหัส ไว้ท้ายสุด
-      if(!a.names.length !== !b.names.length) return a.names.length ? -1 : 1;
-      return (b.budget-a.budget) || (b.actual-a.actual);
+      return a.code.localeCompare(b.code, 'th', {numeric:true, sensitivity:'base'});   // เรียงตามรหัสงบประมาณ (น้อย → มาก)
     });
   el.innerHTML = list.map(g=>{
     const pct = g.budget>0 ? Math.min(100,(g.actual/g.budget*100)) : 0;
