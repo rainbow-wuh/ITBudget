@@ -762,7 +762,7 @@
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>รหัส</th><th>รหัสงบ</th><th>ชื่อโครงการ</th><th>ผู้รับผิดชอบ</th><th>ยุทธศาสตร์</th><th>แหล่งงบ</th><th>ระยะเวลา</th><th style="text-align:right">งบที่ขอ (฿)</th><th>สถานะ</th><th></th>
+            <th data-pk="code">รหัส</th><th data-pk="plan_code">รหัสงบ</th><th data-pk="name">ชื่อโครงการ</th><th data-pk="owner">ผู้รับผิดชอบ</th><th data-pk="strategy">ยุทธศาสตร์</th><th data-pk="source">แหล่งงบ</th><th data-pk="startKey">ระยะเวลา</th><th data-pk="budget" style="text-align:right">งบที่ขอ (฿)</th><th data-pk="statusIdx">สถานะ</th><th></th>
           </tr></thead>
           <tbody id="pjBody"></tbody>
         </table>
@@ -2107,6 +2107,7 @@ function pjFillSelect(sel, firstLabel, values){
 function fmtBaht(n){ return (n||0).toLocaleString('th-TH',{minimumFractionDigits:0, maximumFractionDigits:2}); }
 function pjPeriod(p){ return (p.start && p.end) ? `${p.start} – ${p.end}` : '-'; }
 
+let pjSort = {key:'', asc:true};
 function renderProjects(){
   const yearRows = currentYear==='all' ? projects : projects.filter(p=>p.year===currentYear || !p.year);
   document.getElementById('pjNote').textContent = currentYear==='all' ? 'ทุกปีงบประมาณ' : 'ปีงบประมาณ ' + currentYear;
@@ -2126,7 +2127,19 @@ function renderProjects(){
     (!pjStatusFilter || p.status===pjStatusFilter) &&
     (!uf.value || p.unit===uf.value) && (!sf.value || p.strategy===sf.value) && (!of.value || p.source===of.value) &&
     (!q || [p.code,p.plan_code,p.name,p.owner,p.co].some(x=>(x||'').toLowerCase().includes(q)))
-  ).sort((a,b)=> (b._row - a._row));   // ล่าสุดอยู่บน
+  ).sort((a,b)=>{
+    if(!pjSort.key) return b._row - a._row;   // ค่าเริ่มต้น: ล่าสุดอยู่บน
+    const val = p => pjSort.key==='startKey' ? (thaiToIso(p.start)||'') : pjSort.key==='statusIdx' ? PJ_STATUSES.indexOf(p.status) : p[pjSort.key];
+    const x = val(a), y = val(b);
+    let r;
+    if(typeof x==='number' && typeof y==='number') r = x - y;
+    else r = String(x ?? '').localeCompare(String(y ?? ''), 'th', {numeric:true, sensitivity:'base'});
+    return pjSort.asc ? r : -r;
+  });
+  document.querySelectorAll('#view-projects thead th[data-pk]').forEach(th=>{
+    th.classList.toggle('sorted', pjSort.key===th.dataset.pk);
+    th.classList.toggle('asc', pjSort.key===th.dataset.pk && pjSort.asc);
+  });
 
   const body = document.getElementById('pjBody');
   if(rows.length===0){
@@ -2220,6 +2233,16 @@ function nextProjectCode(year){
   const max = projects.filter(p=>(p.code||'').startsWith(prefix)).reduce((m,p)=> Math.max(m, parseInt(p.code.slice(prefix.length),10) || 0), 0);
   return prefix + String(max + 1).padStart(3,'0');
 }
+
+document.querySelectorAll('#view-projects thead th[data-pk]').forEach(th=>{
+  th.style.cursor = 'pointer';
+  th.addEventListener('click', ()=>{
+    const k = th.dataset.pk;
+    if(pjSort.key===k){ if(pjSort.asc) pjSort.asc = false; else pjSort = {key:'', asc:true}; }   // คลิก: น้อย→มาก, ซ้ำ: มาก→น้อย, ซ้ำอีก: กลับค่าเริ่มต้น
+    else pjSort = {key:k, asc:true};
+    renderProjects();
+  });
+});
 
 document.getElementById('pjForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
