@@ -781,6 +781,7 @@
 
   <!-- ================= งบประมาณแยกตามโครงการ ================= -->
   <div class="view" id="view-budget-proj">
+    <section class="cards" id="projSummaryCards"></section>
     <section>
       <div class="section-head">
         <div>
@@ -2378,6 +2379,10 @@ async function deleteProject(id){
 function renderProjBudget(){
   const el = document.getElementById('gaugeListProj');
   if(!el) return;
+  // ยอดรวมทั้งหมดของปีที่เลือก (ชุดเดียวกับหน้า Dashboard)
+  const _rows = currentRows();
+  const sc = document.getElementById('projSummaryCards');
+  if(sc) sc.innerHTML = summaryCardsHtml(_rows.reduce((t,d)=>t+(d.budget||0),0), registerActualTotal(currentYear), _rows.length, currentYear==='all' ? 'ทุกปีงบประมาณ' : ('ปีงบประมาณ '+currentYear));
   const NOCODE = '';
   const map = {};
   const get = c => (map[c] = map[c] || {code:c, names:[], requested:0, budget:0, count:0, actual:0, bought:0, items:[], plans:[]});
